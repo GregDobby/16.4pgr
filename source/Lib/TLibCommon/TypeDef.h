@@ -253,7 +253,13 @@
 
 #define MAX_TIMECODE_SEI_SETS                                                  3 ///< Maximum number of time sets
 
-#define ENABLE_PICTURE_RESAMPLING						0
+// -----------------------------------------------
+//	Tsinghua
+// -----------------------------------------------
+#define PGR_ENABLE				1
+
+
+
 //------------------------------------------------
 // Derived macros
 //------------------------------------------------

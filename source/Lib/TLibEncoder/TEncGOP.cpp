@@ -1247,7 +1247,8 @@ Void TEncGOP::compressGOP( Int iPOCLast, Int iNumPicRcvd, TComList<TComPic*>& rc
     m_pcSliceEncoder->initEncSlice ( pcPic, iPOCLast, pocCurr, iNumPicRcvd, iGOPid, pcSlice, isField );
 
 	// pixel resample
-#ifdef ENABLE_PICTURE_RESAMPLING
+	// Tsinghua
+#if ENABLE_PICTURE_RESAMPLING
 
 
 	//pcPic->getPicYuvOrg()->resample()

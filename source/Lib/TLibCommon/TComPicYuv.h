@@ -156,11 +156,10 @@ public:
   Void          setBorderExtension(Bool b) { m_bIsBorderExtended = b; }
   Void          DefaultConvertPix(TComPicYuv* pcSrcPicYuv, const BitDepths& bitDepths);
 
-#ifdef ENABLE_PICTURE_RESAMPLING
+#if PGR_ENABLE
   // resample
-  Void			resampleLowerBound(UInt uiMaxCUWidth, UInt uiMaxCUHeight, Bool bInverse = false);
-  Void			resampleUpperBound(UInt uiMaxCUWidth, UInt uiMaxCUHeight, Bool bInverse = false);
-#endif // ENABLE_PICTURE_RESAMPLING
+  Void			resample(UInt uiMaxCUWidth, UInt uiMaxCUHeight, Bool bInverse = false);
+#endif // PGR_ENABLE
 
 };// END CLASS DEFINITION TComPicYuv
 

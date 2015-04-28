@@ -346,14 +346,14 @@ Void TComPicYuv::DefaultConvertPix(TComPicYuv* pcSrcPicYuv, const BitDepths& bit
 }
 
 
-#ifdef ENABLE_PICTURE_RESAMPLING
+#ifdef PGR_ENABLE
 /*
 *	resample
 *	param:	uiMaxCUWidth		used for generating sample stride in horizontal direction
 *	param:	uiMaxCUHeight		used for generating sample stride in vertical direction
 *	param:	inverse				false for forward direction; true for backward direction
 */
-Void TComPicYuv::resampleLowerBound(UInt uiMaxCUWidth, UInt uiMaxCUHeight, Bool bInverse = false)
+Void TComPicYuv::resample(UInt uiMaxCUWidth, UInt uiMaxCUHeight, Bool bInverse = false)
 {
 	assert(uiMaxCUWidth != 0 && uiMaxCUHeight != 0);
 
@@ -367,9 +367,13 @@ Void TComPicYuv::resampleLowerBound(UInt uiMaxCUWidth, UInt uiMaxCUHeight, Bool 
 		
 		UInt uiStrideX = uiPicWidth / uiMaxCUWidth;			// sample stride in horizontal direction as well as the number of intact CUs in a row
 		UInt uiStrideY = m_iPicHeight / uiMaxCUHeight;		// sample stride in vertical direction as well as the number of intact CUs in a column
-		UInt uiRsmpldWidth = uiStrideX * uiMaxCUWidth;		// width of the part to be resampled in the picture
-		UInt uiRsmpldHeight = uiStrideY * uiMaxCUHeight;	// height of the part to be resampled in the picture
+		
+		UInt uiStrideXplus1 = uiStrideX + 1;
+		UInt uiStrideYplus1 = uiStrideY + 1;
 
+		UInt uiNumberUseBiggerStrideX = uiPicWidth % uiStrideX;		// number of bigger strides in x direction
+		UInt uiNumberUseBiggerStrideY = uiPicHeight % uiStrideY;	// number of bigger strides in y direction
+		
 		// allocate  pixels memory
 		Pel *piPicTmpBuf, *piPicTmpOrg;
 		piPicTmpBuf = (Pel*)xMalloc(Pel,uiPicStride*getTotalHeight(cId));															
@@ -382,18 +386,26 @@ Void TComPicYuv::resampleLowerBound(UInt uiMaxCUWidth, UInt uiMaxCUHeight, Bool 
 			// traverse the resampled picture
 			for (UInt uiPicRsmpldY = 0; uiPicRsmpldY < uiPicHeight; uiPicRsmpldY++)
 			{
-
 				for (UInt uiPicRsmpldX = 0; uiPicRsmpldX < uiPicWidth; uiPicRsmpldX++)
 				{
-					UInt uiPicOrgX = uiPicRsmpldX / uiMaxCUWidth + (uiPicRsmpldX % uiMaxCUWidth) * uiStrideX;	// corresponding X in the original picture
-					UInt uiPicOrgY = uiPicRsmpldY / uiMaxCUHeight + (uiPicRsmpldY % uiMaxCUHeight) * uiStrideY;	// corresponding Y in the original picture
-					uiDstId = uiPicStride * uiPicRsmpldY + uiPicRsmpldX;										// pixel index in resampled picture
-
-					if (uiPicRsmpldY >= uiRsmpldHeight || uiPicRsmpldX >= uiRsmpldWidth)
-						uiSrcId = uiDstId;													// leave pixels that cannot form a complete CU uchanged
+					UInt uiIdX = uiPicRsmpldX % uiMaxCUWidth;
+					UInt uiIdY = uiPicRsmpldY % uiMaxCUHeight;
+					UInt uiPicOrgX, uiPicOrgY;
+					if (uiIdX < uiNumberUseBiggerStrideX)
+						uiPicOrgX = uiPicRsmpldX / uiMaxCUWidth + uiIdX * uiStrideXplus1;	// corresponding X in the original picture
 					else
-						uiSrcId = uiPicStride * uiPicOrgY + uiPicOrgX;
+						uiPicOrgX = uiPicRsmpldX / uiMaxCUWidth + uiNumberUseBiggerStrideX * uiStrideXplus1 + (uiIdX - uiNumberUseBiggerStrideX) * uiStrideX;
 					
+					if (uiIdY < uiNumberUseBiggerStrideY)
+						uiPicOrgY = uiPicRsmpldY / uiMaxCUHeight + uiIdY * uiStrideYplus1;	// corresponding Y in the original picture
+					else
+						uiPicOrgY = uiPicRsmpldY / uiMaxCUHeight + uiNumberUseBiggerStrideY * uiStrideYplus1 + (uiIdY - uiNumberUseBiggerStrideY) * uiStrideY;	
+
+					// destination: resampled picture
+					uiDstId = uiPicStride * uiPicRsmpldY + uiPicRsmpldX;										// pixel index in resampled picture
+					// source: original picture
+					uiSrcId = uiPicStride *uiPicOrgY + uiPicOrgX;												// pixel index in orginal picture
+
 					piPicTmpOrg[uiDstId] = m_piPicOrg[cId][uiSrcId];
 				}
 			}
@@ -411,14 +423,34 @@ Void TComPicYuv::resampleLowerBound(UInt uiMaxCUWidth, UInt uiMaxCUHeight, Bool 
 			{
 				for (UInt uiPicOrgX = 0; uiPicOrgX < uiPicWidth; uiPicOrgX++)
 				{
-					UInt uiPicRsmpldX = uiPicOrgX / uiStrideX + (uiPicOrgX % uiStrideX) * uiMaxCUWidth;		// corresponding X in the resampled picture
-					UInt uiPicRsmpldY = uiPicOrgY / uiStrideY + (uiPicOrgY % uiStrideY) * uiMaxCUHeight;	// corresponding Y in the resampled picture
-					uiDstId = uiPicStride * uiPicOrgY + uiPicOrgX;											// pixel index in the resampled picture
-
-					if (uiPicOrgY >= uiRsmpldHeight || uiPicOrgX >= uiRsmpldWidth)
-						uiSrcId = uiDstId;												// leave pixels that cannot form a complete CU uchanged
+					UInt uiThresholdX = uiNumberUseBiggerStrideX * uiStrideXplus1;	// original picture: x < uiThresholdX use uiStrideXplus1; use uiStrideX otherwise
+					UInt uiThresholdY = uiNumberUseBiggerStrideY * uiStrideYplus1;	// original picture: y < uiThresholdY use uiStrideYplus1; use uiStrideY otherwise
+					UInt uiIdX, uiIdY;					// index of ctu in resampled picture
+					UInt uiPicRsmpldX, uiPicRsmpldY;	// corresponding x,y in resampled picture
+					if (uiPicOrgX < uiThresholdX)
+					{
+						uiIdX = uiPicOrgX % uiStrideXplus1;
+						uiPicRsmpldX = uiPicOrgX / uiStrideXplus1 + uiIdX * uiMaxCUWidth;			
+					}
 					else
-						uiSrcId = uiPicStride * uiPicRsmpldY + uiPicRsmpldX;
+					{
+						uiIdX = (uiPicOrgX - uiThresholdX) % uiStrideX;
+						uiPicRsmpldX = uiNumberUseBiggerStrideX + (uiPicOrgX - uiThresholdX) / uiStrideX + uiIdX * uiMaxCUWidth;
+					}
+					if (uiPicOrgY < uiThresholdY)
+					{
+						uiIdY = uiPicOrgY % uiStrideYplus1;
+						uiPicRsmpldY = uiPicOrgY / uiStrideYplus1 + uiIdY * uiMaxCUWidth;
+					}
+					else
+					{
+						uiIdY = (uiPicOrgY - uiThresholdY) % uiStrideY;
+						uiPicRsmpldY = uiNumberUseBiggerStrideY + (uiPicOrgY - uiThresholdY) / uiStrideY + uiIdY * uiMaxCUWidth;
+					}
+					// destination: orginal picture
+					uiDstId = uiPicStride * uiPicOrgY + uiPicOrgX;
+					// source: resampled picture
+					uiSrcId = uiPicStride * uiPicRsmpldY + uiPicRsmpldX;
 
 					piPicTmpOrg[uiDstId] = m_piPicOrg[cId][uiSrcId];
 				}
@@ -433,94 +465,5 @@ Void TComPicYuv::resampleLowerBound(UInt uiMaxCUWidth, UInt uiMaxCUHeight, Bool 
 	
 }
 
-/*
-*	resample
-*	param:	uiMaxCUWidth		used for generating sample stride in horizontal direction
-*	param:	uiMaxCUHeight		used for generating sample stride in vertical direction
-*	param:	inverse				false for forward direction; true for backward direction
-*/
-Void TComPicYuv::resampleUpperBound(UInt uiMaxCUWidth, UInt uiMaxCUHeight, Bool bInverse = false)
-{
-	assert(uiMaxCUWidth != 0 && uiMaxCUHeight != 0);
-
-	Int iNumberValidComponent = getNumberValidComponents();		// number of valid components, 3 in general
-	for (int ch = 0; ch < iNumberValidComponent; ch++)
-	{
-		ComponentID cId = ComponentID(ch);			// component id
-		UInt uiPicStride = getStride(cId);			// picture width with margin for a certain component
-		UInt uiPicWidth = getWidth(cId);			// picture width without margin for a certain component
-		UInt uiPicHeight = getHeight(cId);			// picture height without margin for a certain component
-
-		// resample stride
-		UInt uiStrideX = (uiPicWidth + uiMaxCUWidth - 1) / uiMaxCUWidth;	// ceil of (uiPicWidth / uiMaxCUWidth)
-		UInt uiStrideY = (uiPicHeight + uiMaxCUHeight - 1) / uiMaxCUHeight;	// ceil of (uiPicHeight / uiMaxCUHeight)
-
-		// allocate  pixels memory
-		Pel *piPicTmpBuf, *piPicTmpOrg;
-		piPicTmpBuf = (Pel*)xMalloc(Pel, uiPicStride*getTotalHeight(cId));
-		piPicTmpOrg = piPicTmpBuf + (m_iMarginY >> getComponentScaleY(cId)) * uiPicStride + (m_iMarginX >> getComponentScaleX(cId));
-
-		UInt uiDstId, uiSrcId;
-		UInt uiOffsetX, uiOffsetY;		// number of padding rows and columns, virtual
-		if (!bInverse)
-		{
-			// forward resample
-			// traverse the resampled picture
-			for (UInt uiPicRsmpldY = 0; uiPicRsmpldY < uiPicHeight; uiPicRsmpldY++)
-			{
-				for (UInt uiPicRsmpldX = 0; uiPicRsmpldX < uiPicWidth; uiPicRsmpldX++)
-				{
-					UInt tmp = uiPicWidth / uiStrideX;
-					UInt tmp1 = uiPicWidth % uiStrideY;
-					UInt uiPicRsmpldTrueX = ;
-					UInt uiPicRsmpldTrueY = ;
-					UInt uiPicOrgX = uiPicRsmpldX / uiMaxCUWidth + (uiPicRsmpldX % uiMaxCUWidth) * uiStrideX;	// corresponding X in the original picture
-					UInt uiPicOrgY = uiPicRsmpldY / uiMaxCUHeight + (uiPicRsmpldY % uiMaxCUHeight) * uiStrideY;	// corresponding Y in the original picture
-														
-					
-
-					uiDstId = uiPicStride * uiPicRsmpldY + uiPicRsmpldX;
-					uiSrcId = uiPicStride * uiPicOrgY + uiPicOrgX;
-
-					piPicTmpOrg[uiDstId] = m_piPicOrg[cId][uiSrcId];
-				}
-			}
-
-			// replace original picture with the resampled picture
-			xFree(m_apiPicBuf[cId]);
-			m_apiPicBuf[cId] = piPicTmpBuf;
-			m_piPicOrg[cId] = piPicTmpOrg;
-		}
-		else
-		{
-			// backward resample
-			// traverse the original picture
-			for (UInt uiPicOrgY = 0; uiPicOrgY < uiPicHeight; uiPicOrgY++)
-			{
-				UInt uiPicRsmpldY = uiPicOrgY / uiStrideY + (uiPicOrgY % uiStrideY) * uiMaxCUHeight;	// corresponding Y in the resampled picture
-				for (UInt uiPicOrgX = 0; uiPicOrgX < uiPicWidth; uiPicOrgX++)
-				{
-					UInt uiPicRsmpldX = uiPicOrgX / uiStrideX + (uiPicOrgX % uiStrideX) * uiMaxCUWidth; // corresponding X in the resampled picture
-					uiDstId = uiPicStride * uiPicOrgY + uiPicOrgX;
-
-					if (uiPicOrgY >= uiRsmpldHeight || uiPicOrgX >= uiRsmpldWidth)
-						uiSrcId = uiDstId;												// leave pixels that cannot form a complete CU uchanged
-					else
-						uiSrcId = uiPicStride * uiPicRsmpldY + uiPicRsmpldX;
-
-					piPicTmpOrg[uiDstId] = m_piPicOrg[cId][uiSrcId];
-				}
-			}
-
-			// replace resampled picture with the original picture
-			xFree(m_apiPicBuf[cId]);
-			m_apiPicBuf[cId] = piPicTmpBuf;
-			m_piPicOrg[cId] = piPicTmpOrg;
-		}
-	}
-
-}
-
-
-#endif // ENABLE_PICTURE_RESAMPLING
+#endif // PGR_ENABLE
 //! \}

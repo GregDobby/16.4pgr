@@ -266,7 +266,15 @@ Void TEncCu::compressCtu( TComDataCU* pCtu, UChar* lastPLTSize, UChar* lastPLTUs
   // analysis of CU
   DEBUG_STRING_NEW(sDebug)
 
+#if PGR_ENABLE
+  // for intra frame, use PGR method
+  if (pCtu->getSlice()->getSliceType == I_SLICE)
+	  xCompressCUPGR(m_ppcBestCU[0],m_ppcTempCU[0]);
+  else
+	  xCompressCU(m_ppcBestCU[0], m_ppcTempCU[0], 0 DEBUG_STRING_PASS_INTO(sDebug));
+#else
   xCompressCU( m_ppcBestCU[0], m_ppcTempCU[0], 0 DEBUG_STRING_PASS_INTO(sDebug) );
+#endif
   DEBUG_STRING_OUTPUT(std::cout, sDebug)
 
 #if ADAPTIVE_QP_SELECTION
@@ -1487,6 +1495,39 @@ Void TEncCu::xCompressCU( TComDataCU*& rpcBestCU, TComDataCU*& rpcTempCU, UInt u
   assert( rpcBestCU->getPredictionMode( 0 ) != NUMBER_OF_PREDICTION_MODES );
   assert( rpcBestCU->getTotalCost     (   ) != MAX_DOUBLE                 );
 }
+
+#if PGR_ENABLE
+// compress CU using PGR method
+Void  TEncCu::xCompressCUPGR(TComDataCU*& rpcBestCU, TComDataCU*& rpcTempCU)
+{
+	// ---- prediction using default method(Template Matching) ----
+	preDefaultMethod(rpcTempCU);
+
+
+	// ---- rpcBestCU totalcost initialization needed ----
+
+
+	UInt uiResiThreshold;			
+	UInt uiThresholdIncrement;		// uiResiThreshold updating step, to be setted
+	UInt uiMinThreshold, uiMaxThreshold; // minimum and maximum value of uiResiThreshold, to be setted
+
+	// loop
+	// try different uiResiTreshold
+	for (uiResiThreshold = uiMinThreshold; uiResiThreshold < uiMaxThreshold; uiResiThreshold += uiThresholdIncrement)
+	{
+		// ---- revise anomaly residue using different methods ----
+		reviseAnomalyResidue(rpcTempCU,uiResiThreshold);
+		
+		// ---- transform including rdcost calculating ----
+		xCheckPRGResidue(rpcBestCU, rpcTempCU);
+
+		// ---- initialize estimation data ----
+		rpcTempCU->initEstData(0,0,0);		// need a new method maybe
+	}
+}
+
+
+#endif
 
 /** finish encoding a cu and handle end-of-slice conditions
  * \param pcCU
