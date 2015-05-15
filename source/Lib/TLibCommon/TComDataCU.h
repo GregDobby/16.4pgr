@@ -49,6 +49,12 @@
 #include "TComRdCost.h"
 #include "TComPattern.h"
 
+#if PGR_ENABLE
+
+#include "TLibEncoder/PixelPrediction.h"
+
+#endif
+
 //! \ingroup TLibCommon
 //! \{
 
@@ -112,6 +118,15 @@ private:
 
   Pel*           m_pcIPCMSample[MAX_NUM_COMPONENT];    ///< PCM sample buffer (0->Y, 1->Cb, 2->Cr)
   Bool*          m_ColourTransform; 
+
+#if PGR_ENABLE
+  // ---- Revise Anomaly Residue ----
+  UInt						m_uiMaxSizeResiPLT[MAX_NUM_COMPONENT];				///< maximum size of residue palette
+  vector<ResiPLTInfo>		m_vResiPLTInfo[MAX_NUM_COMPONENT];					///< anomaly residue: processed information
+  vector<Pel>				m_vResiPLT[MAX_NUM_COMPONENT];						///< current residue palette
+  vector<Pel>				m_vLastResiPLT[MAX_NUM_COMPONENT];					///< previous residue palette
+  vector<UChar>				m_vLastResiPLTReusedFlag[MAX_NUM_COMPONENT];		///< reused flag
+#endif
 
   // -------------------------------------------------------------------------------------------------------------------
   // neighbour access variables

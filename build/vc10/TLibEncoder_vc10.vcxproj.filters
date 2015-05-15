@@ -139,5 +139,8 @@
     <ClInclude Include="..\..\source\Lib\TLibEncoder\SEIEncoder.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\source\Lib\TLibEncoder\PixelPrediction.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>

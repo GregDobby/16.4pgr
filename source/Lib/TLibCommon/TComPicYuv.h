@@ -64,6 +64,12 @@ private:
 
   Pel*  m_piPicOrg[MAX_NUM_COMPONENT];              ///< m_apiPicBuf[ch] + m_iMarginLumaY[ch]*getStride() + m_iMarginLumaX[ch]
 
+#if PGR_ENABLE
+  Pel* m_apiPicRsmpldBuf[MAX_NUM_COMPONENT];		///< Buffer (resampled)
+  
+  Pel* m_piPicRsmpld[MAX_NUM_COMPONENT];			///< m_apiPicRsmpldBuf[ch] + m_iMarginLumaY[ch]*getStride() + m_iMarginLumaX[ch]
+#endif
+
   // ------------------------------------------------------------------------------------------------
   //  Parameter for general YUV buffer usage
   // ------------------------------------------------------------------------------------------------

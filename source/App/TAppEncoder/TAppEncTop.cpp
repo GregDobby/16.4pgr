@@ -513,6 +513,17 @@ Void TAppEncTop::encode()
       m_cTEncTop.setFramesToBeEncoded(m_iFrameRcvd);
     }
 
+	// test resample
+	//pcPicYuvOrg->resample(m_uiMaxCUWidth, m_uiMaxCUHeight, false);
+	//TVideoIOYuv resampled;
+	//resampled.open("resampled.yuv", true, m_inputBitDepth, m_MSBExtendedBitDepth, m_internalBitDepth);
+	//resampled.write(pcPicYuvOrg, (!m_outputInternalColourSpace) ? m_inputColourSpaceConvert : IPCOLOURSPACE_UNCHANGED, m_confWinLeft, m_confWinRight, m_confWinTop, m_confWinBottom);
+	//resampled.close();
+	//pcPicYuvOrg->resample(m_uiMaxCUWidth, m_uiMaxCUHeight, true);
+	//resampled.open("resampled_inverse.yuv", true, m_inputBitDepth, m_MSBExtendedBitDepth, m_internalBitDepth);
+	//resampled.write(pcPicYuvOrg, (!m_outputInternalColourSpace) ? m_inputColourSpaceConvert : IPCOLOURSPACE_UNCHANGED, m_confWinLeft, m_confWinRight, m_confWinTop, m_confWinBottom);
+	//resampled.close();
+
     // call encoding function for one frame
     if ( m_isField )
     {
@@ -530,6 +541,7 @@ Void TAppEncTop::encode()
       outputAccessUnits.clear();
     }
   }
+
 
   m_cTEncTop.printSummary(m_isField);
 

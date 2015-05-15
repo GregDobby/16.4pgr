@@ -49,6 +49,14 @@
 #include "TEncEntropy.h"
 #include "TEncSearch.h"
 #include "TEncRateCtrl.h"
+
+#if PGR_ENABLE
+
+#include "PixelPrediction.h"
+
+#endif
+
+
 //! \ingroup TLibEncoder
 //! \{
 
@@ -79,6 +87,18 @@ private:
 	TComYuv**               m_ppcOrigYuv;     ///< Original Yuv for each depth
 	TComYuv**               m_ppcNoCorrYuv;
 
+#if PGR_ENABLE
+	TComYuv*				m_pcPreYuvPGR;	  ///< prediction yuv using pgr method
+	TComYuv*				m_pcRecoYuvPGR;   ///< reconstruction yuv using pgr method
+	TComYuv*				m_pcResiYuvPGR;	  ///< residue yuv using pgr method
+	// ---- Template Match ----
+	Pixel*					m_pPixel[MAX_NUM_COMPONENT];						///< pixel data
+	PixelTemplate*			m_pPixelTemplate[MAX_NUM_COMPONENT][MAX_PT_NUM];	///< hash table
+	vector<PixelTemplate*>	m_pPixelTemplatePool;								///< convinient for releasing memory
+
+	
+#endif
+
 	//  Data : encoder control
 	Bool                    m_bEncodeDQP;
 	Bool                    m_CodeChromaQpAdjFlag;
@@ -106,6 +126,16 @@ public:
 	Void  create(UChar uhTotalDepth, UInt iMaxWidth, UInt iMaxHeight, ChromaFormat chromaFormat
 		, UInt uiPLTMaxSize, UInt uiPLTMaxPredSize
 		);
+#if PGR_ENABLE
+	// create pgr buffers
+	Void  createPGR(UInt uiPicWidth, UInt uiPicHeight, ChromaFormat chromaFormat);
+
+	// init estimation data
+	Void  initEstPGR(TComPicYuv* pcPicYuvOrg);
+
+	// release pixeltemplate memory
+	Void releasePixelTemplate();
+#endif
 
 	/// destroy internal buffers
 	Void  destroy();

@@ -53,6 +53,99 @@ using namespace std;
 // Constructor / destructor / create / destroy
 // ====================================================================================================================
 
+#if PGR_ENABLE
+/**
+\param    uiPicWidth    picture width
+\param    uiPicHeight   picture height
+\param    chromaFormat  chroma format
+*/
+
+Void  TEncCu::createPGR(UInt uiPicWidth, UInt uiPicHeight, ChromaFormat chromaFormat)
+{
+	m_pcPreYuvPGR = new TComYuv; m_pcPreYuvPGR->create(uiPicWidth, uiPicHeight, chromaFormat);
+	m_pcRecoYuvPGR = new TComYuv; m_pcRecoYuvPGR->create(uiPicWidth, uiPicHeight, chromaFormat);
+	m_pcResiYuvPGR = new TComYuv; m_pcResiYuvPGR->create(uiPicWidth, uiPicHeight, chromaFormat);
+}
+
+Void  TEncCu::initEstPGR(TComPicYuv* pcPicYuvOrg)
+{
+	UInt uiNumValidComponent = m_pcResiYuvPGR->getNumberValidComponents();
+	// release hash table memory
+	releasePixelTemplate();
+	for (int ch = 0; ch < uiNumValidComponent; ch++)
+	{
+		ComponentID cId = ComponentID(ch);
+		UInt uiPicWidth = m_pcResiYuvPGR->getWidth(cId);
+		UInt uiPicHeight = m_pcResiYuvPGR->getHeight(cId);
+
+		// init hashtable
+		for (int i = 0; i < MAX_PT_NUM; i++)
+		{
+			m_pPixelTemplate[cId][i] = NULL;
+		}
+		// init pixel data
+		if (m_pPixel[cId] == NULL)
+			m_pPixel[cId] = new Pixel[(uiPicWidth + 2 * EXTEG)*(uiPicHeight + 2 * EXTEG)];
+
+		UInt uiStride = pcPicYuvOrg->getStride(cId);
+		Pel* pBuffer = pcPicYuvOrg->getAddr(cId);
+		for (UInt uiY = 0; uiY < uiPicHeight + 2 * EXTEG; uiY++)
+		{
+			for (UInt uiX = 0; uiX < uiPicWidth + 2 * EXTEG; uiX++)
+			{
+				UInt index = uiY*(uiPicWidth + 2 * EXTEG) + uiX;
+				Pixel* pPixel = m_pPixel[cId] + index;
+
+				pPixel->m_bIsRec = false;
+				pPixel->m_uiX = uiX;
+				pPixel->m_uiY = uiY;
+				if (uiX<EXTEG || uiX>=uiPicWidth+EXTEG || uiY<EXTEG || uiY>=uiPicHeight+EXTEG)
+					pPixel->m_uiOrg = 0;		///< original value
+				else
+				{
+					UInt uiTrueX = uiX - EXTEG;
+					UInt uiTrueY = uiY - EXTEG;
+					UInt index = uiTrueY * uiStride + uiTrueX;
+					pPixel->m_uiOrg = pBuffer[index];
+				}
+				pPixel->m_uiPred = 0;
+				pPixel->m_uiReco = 0;
+				pPixel->m_iResi = 0;
+				pPixel->m_iDiff = 0;
+				pPixel->m_uiBestPX = EXTEG;
+				pPixel->m_uiBestPY = EXTEG;
+				pPixel->m_mmMatch.m_uiAbsDiff = 255;
+				pPixel->m_mmMatch.m_uiNumMatchPoints = 0;
+				pPixel->m_mmMatch.m_uiNumValidPoints = 0;
+			}
+		}
+
+		// init residue
+		Pel* pBuffer = m_pcResiYuvPGR->getAddr(cId);
+		UInt uiStride = m_pcResiYuvPGR->getStride(cId);
+		for (UInt uiY = 0; uiY < uiPicHeight; uiY++)
+		{
+			for (UInt uiX = 0; uiX < uiPicWidth; uiX++)
+			{
+				UInt index = uiStride*uiY + uiX;
+				pBuffer[index] = 0;
+			}
+		}
+	}
+	
+}
+
+Void TEncCu::releasePixelTemplate()
+{
+	for (int i = 0; i < m_pPixelTemplatePool.size(); i++)
+	{
+		delete m_pPixelTemplatePool[i];
+		m_pPixelTemplatePool[i] = NULL;
+	}
+	m_pPixelTemplatePool.clear();
+}
+#endif
+
 /**
  \param    uhTotalDepth  total number of allowable depth
  \param    uiMaxWidth    largest CU width
@@ -77,6 +170,7 @@ Void TEncCu::create(UChar uhTotalDepth, UInt uiMaxWidth, UInt uiMaxHeight, Chrom
   m_ppcRecoYuvTemp = new TComYuv*[m_uhTotalDepth-1];
   m_ppcOrigYuv     = new TComYuv*[m_uhTotalDepth-1];
   m_ppcNoCorrYuv   = new TComYuv*[m_uhTotalDepth-1];
+  
 
   UInt uiNumPartitions;
   for( i=0 ; i<m_uhTotalDepth-1 ; i++)
@@ -215,6 +309,41 @@ Void TEncCu::destroy()
     delete [] m_ppcNoCorrYuv;
     m_ppcNoCorrYuv = NULL;
   }
+
+#if PGR_ENABLE
+  if (m_pcPreYuvPGR)
+  {
+	  m_pcPreYuvPGR->destroy();
+	  delete m_pcPreYuvPGR;
+	  m_pcPreYuvPGR = NULL;
+  }
+  if (m_pcRecoYuvPGR)
+  {
+	  m_pcRecoYuvPGR->destroy();
+	  delete m_pcRecoYuvPGR;
+	  m_pcRecoYuvPGR = NULL;
+  }
+  if (m_pPixelTemplatePool.size() > 0)
+  {
+	  releasePixelTemplate();
+  }
+
+  UInt uiNumValidComponent = m_pcResiYuvPGR->getNumberValidComponents();
+  for (int ch = 0; ch < uiNumValidComponent; ch++)
+  {
+	  ComponentID cId = ComponentID(ch);	  
+	  for (int i = 0; i < MAX_PT_NUM; i++)
+	  {
+		  m_pPixelTemplate[cId][i] = NULL;
+	  }
+	  if (m_pPixel[cId])
+	  {
+		  delete[] m_pPixel[cId];
+		  m_pPixel[cId] = NULL;
+	  }
+  }
+
+#endif
 }
 
 /** \param    pcEncTop      pointer of encoder class
@@ -268,7 +397,7 @@ Void TEncCu::compressCtu( TComDataCU* pCtu, UChar* lastPLTSize, UChar* lastPLTUs
 
 #if PGR_ENABLE
   // for intra frame, use PGR method
-  if (pCtu->getSlice()->getSliceType == I_SLICE)
+  if (pCtu->getSlice()->getSliceType() == I_SLICE)
 	  xCompressCUPGR(m_ppcBestCU[0],m_ppcTempCU[0]);
   else
 	  xCompressCU(m_ppcBestCU[0], m_ppcTempCU[0], 0 DEBUG_STRING_PASS_INTO(sDebug));
@@ -1502,10 +1631,7 @@ Void  TEncCu::xCompressCUPGR(TComDataCU*& rpcBestCU, TComDataCU*& rpcTempCU)
 {
 	// ---- prediction using default method(Template Matching) ----
 	preDefaultMethod(rpcTempCU);
-
-
 	// ---- rpcBestCU totalcost initialization needed ----
-
 
 	UInt uiResiThreshold;			
 	UInt uiThresholdIncrement;		// uiResiThreshold updating step, to be setted
@@ -1522,10 +1648,342 @@ Void  TEncCu::xCompressCUPGR(TComDataCU*& rpcBestCU, TComDataCU*& rpcTempCU)
 		xCheckPRGResidue(rpcBestCU, rpcTempCU);
 
 		// ---- initialize estimation data ----
-		rpcTempCU->initEstData(0,0,0);		// need a new method maybe
+		rpcTempCU->initEstData(0, 0, 0);		// need a new method maybe
 	}
 }
 
+// revise anomaly residue
+// palette method
+Void TEncCu::reviseAnomalyResidue(TComDataCU*& rpcTempCU, UInt uiResidueThreshold)
+{
+	UInt uiNumValidComponent = rpcTempCU->getPic()->getNumberValidComponents();
+	UInt uiLastPLTSize[MAX_NUM_COMPONENT];
+	
+}
+
+/*
+*	Template:
+*		16 17 18 19 20 21
+*		15  8  9 10 11 12
+*       14  7  2  3  4  5
+*		13  6  1  X
+*/
+inline UInt getSerialIndex(UInt uiX, UInt uiY, UInt uiPicWidth)
+{
+	return (uiY + EXTEG)*(uiPicWidth + 2 * EXTEG) + uiX + EXTEG;
+};
+
+// get the 21 neighbors
+Void getNeighbors(UInt uiX, UInt uiY, UInt uiPicWidth, Pixel* pPixel,vector<Pixel>& vTemplate)
+{
+	UInt uiIndex;
+	// 1
+	uiIndex = getSerialIndex(uiX - 1, uiY, uiPicWidth);
+	vTemplate.push_back(pPixel[uiIndex]);
+	// 2
+	uiIndex = getSerialIndex(uiX - 1, uiY - 1, uiPicWidth);
+	vTemplate.push_back(pPixel[uiIndex]);
+	// 3
+	uiIndex = getSerialIndex(uiX, uiY - 1, uiPicWidth);
+	vTemplate.push_back(pPixel[uiIndex]);
+	// 4
+	uiIndex = getSerialIndex(uiX + 1, uiY - 1, uiPicWidth);
+	vTemplate.push_back(pPixel[uiIndex]);
+	// 5
+	uiIndex = getSerialIndex(uiX + 2, uiY - 1, uiPicWidth);
+	vTemplate.push_back(pPixel[uiIndex]);
+	// 6
+	uiIndex = getSerialIndex(uiX - 2, uiY, uiPicWidth);
+	vTemplate.push_back(pPixel[uiIndex]);
+	// 7
+	uiIndex = getSerialIndex(uiX - 2, uiY - 1, uiPicWidth);
+	vTemplate.push_back(pPixel[uiIndex]);
+	// 8 
+	uiIndex = getSerialIndex(uiX - 2, uiY - 2, uiPicWidth);
+	vTemplate.push_back(pPixel[uiIndex]);
+	// 9
+	uiIndex = getSerialIndex(uiX - 1, uiY - 2, uiPicWidth);
+	vTemplate.push_back(pPixel[uiIndex]);
+	// 10
+	uiIndex = getSerialIndex(uiX, uiY - 2, uiPicWidth);
+	vTemplate.push_back(pPixel[uiIndex]);
+	// 11
+	uiIndex = getSerialIndex(uiX + 1, uiY - 2, uiPicWidth);
+	vTemplate.push_back(pPixel[uiIndex]);
+	// 12
+	uiIndex = getSerialIndex(uiX + 2, uiY - 2, uiPicWidth);
+	vTemplate.push_back(pPixel[uiIndex]);
+	// 13
+	uiIndex = getSerialIndex(uiX - 3, uiY, uiPicWidth);
+	vTemplate.push_back(pPixel[uiIndex]);
+	// 14
+	uiIndex = getSerialIndex(uiX - 3, uiY - 1, uiPicWidth);
+	vTemplate.push_back(pPixel[uiIndex]);
+	// 15
+	uiIndex = getSerialIndex(uiX - 3, uiY - 2, uiPicWidth);
+	vTemplate.push_back(pPixel[uiIndex]);
+	// 16
+	uiIndex = getSerialIndex(uiX - 3, uiY - 3, uiPicWidth);
+	vTemplate.push_back(pPixel[uiIndex]);
+	// 17
+	uiIndex = getSerialIndex(uiX - 2, uiY - 3, uiPicWidth);
+	vTemplate.push_back(pPixel[uiIndex]);
+	// 18
+	uiIndex = getSerialIndex(uiX - 1, uiY - 3, uiPicWidth);
+	vTemplate.push_back(pPixel[uiIndex]);
+	// 19
+	uiIndex = getSerialIndex(uiX, uiY - 3, uiPicWidth);
+	vTemplate.push_back(pPixel[uiIndex]);
+	// 20
+	uiIndex = getSerialIndex(uiX + 1, uiY - 3, uiPicWidth);
+	vTemplate.push_back(pPixel[uiIndex]);
+	// 21
+	uiIndex = getSerialIndex(uiX + 2, uiY - 3, uiPicWidth);
+	vTemplate.push_back(pPixel[uiIndex]);
+};
+
+// get 24bit hash value
+UInt getHashValue(UInt uiX, UInt uiY, UInt uiPicWidth, Pixel* pPixel)
+{
+	UInt uiIndex;
+	vector<Pixel> vTemplate;
+	// load template data
+	getNeighbors(uiX, uiY, uiPicWidth, pPixel, vTemplate);
+
+	// calculate hash value
+	UInt uiTmp;
+	UInt uiHashValue = 0;
+	UInt mask = 0xE0;		// (1110 0000)b
+	// 1
+	uiTmp = 0;
+	uiTmp += vTemplate[0].m_bIsRec ? vTemplate[0].m_uiReco : 0;
+	uiHashValue |= (uiTmp & mask) << 21;
+	// 2
+	uiTmp = 0;
+	uiTmp += vTemplate[1].m_bIsRec ? vTemplate[1].m_uiReco : 0;
+	uiHashValue |= (uiTmp & mask) << 18;
+	// 3
+	uiTmp = 0;
+	uiTmp += vTemplate[2].m_bIsRec ? vTemplate[2].m_uiReco : 0;
+	uiHashValue |= (uiTmp & mask) << 15;
+	// 4,5
+	uiTmp = 0;
+	uiTmp += vTemplate[3].m_bIsRec ? vTemplate[3].m_uiReco : 0;
+	uiTmp += vTemplate[4].m_bIsRec ? vTemplate[4].m_uiReco : 0;
+	uiTmp /= 2;
+	uiHashValue |= (uiTmp & mask) << 12;
+	// 6,7,13,14
+	uiTmp = 0;
+	uiTmp += vTemplate[5].m_bIsRec ? vTemplate[5].m_uiReco : 0;
+	uiTmp += vTemplate[6].m_bIsRec ? vTemplate[6].m_uiReco : 0;
+	uiTmp += vTemplate[12].m_bIsRec ? vTemplate[12].m_uiReco : 0;
+	uiTmp += vTemplate[13].m_bIsRec ? vTemplate[13].m_uiReco : 0;
+	uiTmp /= 4;
+	uiHashValue |= (uiTmp & mask) << 9;
+	// 8,15,16,17
+	uiTmp = 0;
+	uiTmp += vTemplate[7].m_bIsRec ? vTemplate[7].m_uiReco : 0;
+	uiTmp += vTemplate[14].m_bIsRec ? vTemplate[14].m_uiReco : 0;
+	uiTmp += vTemplate[15].m_bIsRec ? vTemplate[15].m_uiReco : 0;
+	uiTmp += vTemplate[16].m_bIsRec ? vTemplate[16].m_uiReco : 0;
+	uiTmp /= 4;
+	uiHashValue |= (uiTmp & mask) << 6;
+	// 9,10,18,19
+	uiTmp = 0;
+	uiTmp += vTemplate[8].m_bIsRec ? vTemplate[8].m_uiReco : 0;
+	uiTmp += vTemplate[9].m_bIsRec ? vTemplate[9].m_uiReco : 0;
+	uiTmp += vTemplate[17].m_bIsRec ? vTemplate[17].m_uiReco : 0;
+	uiTmp += vTemplate[18].m_bIsRec ? vTemplate[18].m_uiReco : 0;
+	uiTmp /= 4;
+	uiHashValue |= (uiTmp & mask) << 3;
+	// 11,12,20,21
+	uiTmp = 0;
+	uiTmp += vTemplate[10].m_bIsRec ? vTemplate[10].m_uiReco : 0;
+	uiTmp += vTemplate[11].m_bIsRec ? vTemplate[11].m_uiReco : 0;
+	uiTmp += vTemplate[19].m_bIsRec ? vTemplate[19].m_uiReco : 0;
+	uiTmp += vTemplate[20].m_bIsRec ? vTemplate[20].m_uiReco : 0;
+	uiTmp /= 4;
+	uiHashValue |= (uiTmp & mask);
+
+	return uiHashValue;
+};
+
+// ???总误差的计算、匹配点数量的计算
+Void tryMatch(UInt uiX, UInt uiY, UInt uiCX, UInt uiCY, MatchMetric &mmMatchMetric, UInt uiPicWidth, Pixel* pPixel)
+{
+	vector<Pixel> vTemplate, vCTemplate;
+	// get the 21 neighbors
+	getNeighbors(uiX, uiY, uiPicWidth, pPixel, vTemplate);
+	getNeighbors(uiCX, uiCY, uiPicWidth, pPixel, vCTemplate);
+
+	bool bContinue = true;
+	UInt uiTotalAbsDiff = 0;
+	UInt uiNumValidPoints = 0;
+	UInt uiNumMatchPoints = 0;
+	for (int i = 0; i < 3; i++)
+	{
+		if (vTemplate[i].m_bIsRec)
+		{
+			uiNumValidPoints++;
+			if (vCTemplate[i].m_bIsRec)
+			{
+				UInt uiDiff = abs((int)(vTemplate[i].m_uiReco - vCTemplate[i].m_uiReco));
+				uiTotalAbsDiff += uiDiff;
+				if (uiDiff == 0)
+					uiNumMatchPoints++;
+			}
+			else
+			{
+				uiTotalAbsDiff += 255;
+			}
+		}
+	}
+	if (uiNumMatchPoints < 3)
+		bContinue = false;
+	for (int i = 3; i < 12 && bContinue; i++)
+	{
+		if (vTemplate[i].m_bIsRec)
+		{
+			uiNumValidPoints++;
+			if (vCTemplate[i].m_bIsRec)
+			{
+				UInt uiDiff = abs((int)(vTemplate[i].m_uiReco - vCTemplate[i].m_uiReco));
+				uiTotalAbsDiff += uiDiff;
+				if (uiDiff == 0)
+					uiNumMatchPoints++;
+			}
+			else
+			{
+				uiTotalAbsDiff += 255;
+			}
+		}
+	}
+	if (uiNumMatchPoints < 8)
+		bContinue = false;
+	for (int i = 12; i < 21 && bContinue; i++)
+	{
+		if (vTemplate[i].m_bIsRec)
+		{
+			uiNumValidPoints++;
+			if (vCTemplate[i].m_bIsRec)
+			{
+				UInt uiDiff = abs((int)(vTemplate[i].m_uiReco - vCTemplate[i].m_uiReco));
+				uiTotalAbsDiff += uiDiff;
+				if (uiDiff == 0)
+					uiNumMatchPoints++;
+			}
+			else
+			{
+				uiTotalAbsDiff += 255;
+			}
+		}
+	}
+	mmMatchMetric.m_uiX = uiCX;
+	mmMatchMetric.m_uiY = uiCY;
+	mmMatchMetric.m_uiAbsDiff = uiNumValidPoints == 0 ? 255 : (uiTotalAbsDiff / uiNumValidPoints);
+	mmMatchMetric.m_uiNumValidPoints = uiNumValidPoints;
+	mmMatchMetric.m_uiNumValidPoints = uiNumMatchPoints;
+};
+
+// preDefaultMethod
+Void  TEncCu::preDefaultMethod(TComDataCU*& rpcTempCU)	// to predict every pixel in the given CU using default method which is  predicted in the process before
+{
+	// template matching
+	UInt uiCUPelX = rpcTempCU->getCUPelX();			// x of upper left corner of the cu
+	UInt uiCUPelY = rpcTempCU->getCUPelY();			// y of upper left corner of the 
+
+	UInt uiMaxCUWidth = rpcTempCU->getSlice()->getSPS()->getMaxCUWidth();		// max cu width
+	UInt uiMaxCUHeight = rpcTempCU->getSlice()->getSPS()->getMaxCUHeight();		// max cu height
+
+	// pic
+	TComPic *pcPic = rpcTempCU->getPic();
+	TComPicYuv* pcPredYuv = pcPic->getPicYuvPred();
+	TComPicYuv* pcResiYuv = pcPic->getPicYuvResi();
+	UInt uiNumValidCopmonent = pcPic->getNumberValidComponents();
+	
+
+	for (UInt ch = 0; ch < uiNumValidCopmonent; ch++)
+	{
+		ComponentID cId = ComponentID(ch);
+		// picture description
+		UInt uiStride = m_pcPreYuvPGR->getStride(cId);									// stride for a certain component 
+		UInt uiPicWidth = m_pcPreYuvPGR->getWidth(cId);									// picture width for a certain component
+		UInt uiPicHeight = m_pcPreYuvPGR->getHeight(cId);								// picture height for a certain component
+		
+		UInt uiCBWidth = uiMaxCUWidth >> (m_pcPreYuvPGR->getComponentScaleX(cId));		// code block width for a certain component
+		UInt uiCBHeight = uiMaxCUHeight >> (m_pcPreYuvPGR->getComponentScaleY(cId));	// code block height for a certain component
+		UInt uiStrideX = uiPicWidth / uiMaxCUWidth;			// sample stride in horizontal direction as well as the number of intact CUs in a row
+		UInt uiStrideY = uiPicHeight / uiMaxCUHeight;		// sample stride in vertical direction as well as the number of intact CUs in a column
+		UInt uiStrideXplus1 = uiStrideX + 1;
+		UInt uiStrideYplus1 = uiStrideY + 1;
+		UInt uiNumberUseBiggerStrideX = uiPicWidth % uiMaxCUWidth;
+		UInt uiNumberUseBiggerStrideY = uiPicHeight % uiMaxCUHeight;
+		// rectangle of the code block
+		UInt uiTopX	= Clip3((UInt)0,uiPicWidth,uiCUPelX);
+		UInt uiTopY = Clip3((UInt)0, uiPicHeight, uiCUPelY);
+		UInt uiBottomX = Clip3((UInt)0, uiPicWidth, uiCUPelX + uiCBWidth);
+		UInt uiBottomY = Clip3((UInt)0, uiPicHeight, uiPicHeight + uiCBHeight);
+		
+		for (UInt uiY = uiTopY; uiY < uiBottomY; uiY++)
+		{
+			for (UInt uiX = uiTopX; uiX < uiBottomX; uiX++)
+			{
+				UInt uiTrueX, uiTrueY;
+				UInt uiIdX, uiIdY;
+				uiIdX = uiX % uiMaxCUWidth;
+				uiIdY = uiY % uiMaxCUHeight;
+				// coordinates transform
+				if (uiIdX < uiNumberUseBiggerStrideX)
+					uiTrueX = uiX / uiMaxCUWidth + uiIdX * uiStrideXplus1;
+				else
+					uiTrueX = uiX / uiMaxCUWidth + (uiIdX - uiNumberUseBiggerStrideX) * uiStrideX + uiNumberUseBiggerStrideX*uiStrideXplus1;
+				if (uiIdY < uiNumberUseBiggerStrideY)
+					uiTrueY = uiY / uiMaxCUHeight + uiIdY*uiStrideYplus1;
+				else
+					uiTrueY = uiY / uiMaxCUHeight + (uiIdY - uiNumberUseBiggerStrideY) * uiStrideY + uiNumberUseBiggerStrideY * uiStrideYplus1;
+
+				// template match
+				UInt uiHashValue = getHashValue(uiTrueX, uiTrueY, uiPicWidth, m_pPixel[cId]);
+				Pixel* pCurPixel = m_pPixel[cId] + getSerialIndex(uiTrueX, uiTrueY, uiPicWidth);
+
+				assert(uiHashValue >= 0 && uiHashValue < MAX_PT_NUM);
+				PixelTemplate* pHashList = m_pPixelTemplate[cId][uiHashValue];	// hash list
+				PixelTemplate* pBestMatch = NULL;								// best match template
+				
+				MatchMetric mmBestMetric;
+				while (pHashList)
+				{
+					MatchMetric mmTmp;
+					tryMatch(uiX, uiY, pHashList->m_PX, pHashList->m_PY, mmTmp, uiPicWidth, m_pPixel[cId]);
+					if (mmTmp.m_uiNumMatchPoints > mmBestMetric.m_uiNumMatchPoints)
+					{
+						mmBestMetric = mmTmp;
+						pBestMatch = pHashList;
+					}
+					pHashList = pHashList->m_pptNext;
+				}
+				if (pBestMatch)
+				{
+					pCurPixel->m_mmMatch = mmBestMetric;
+					pBestMatch->m_uiNumUsed++;
+					Pixel* pRefPixel = m_pPixel[cId] + getSerialIndex(mmBestMetric.m_uiX, mmBestMetric.m_uiY, uiPicWidth);
+					pCurPixel->m_uiPred = pRefPixel->m_uiReco;								// prediction
+					pCurPixel->m_iResi = pCurPixel->m_uiOrg - pCurPixel->m_uiPred;			// residue
+				}
+				// insert new template
+				PixelTemplate* pCurTemplate = new PixelTemplate(uiX, uiY);
+				pCurTemplate->m_pptNext = m_pPixelTemplate[cId][uiHashValue];
+				m_pPixelTemplate[cId][uiHashValue] = pCurTemplate;
+				m_pPixelTemplatePool.push_back(pCurTemplate);
+
+				//
+				UInt uiIdx = uiY*uiStride + uiX;
+				pcPredYuv->getAddr(cId)[uiIdx] = m_pcPreYuvPGR->getAddr(cId)[uiIdX] = pCurPixel->m_uiPred;
+				pcResiYuv->getAddr(cId)[uiIdx] = m_pcResiYuvPGR->getAddr(cId)[uiIdx] = pCurPixel->m_iResi;
+			}// end for x
+		}// end for y
+	}// end for ch
+}
 
 #endif
 

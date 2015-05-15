@@ -1247,21 +1247,16 @@ Void TEncGOP::compressGOP( Int iPOCLast, Int iNumPicRcvd, TComList<TComPic*>& rc
     m_pcSliceEncoder->initEncSlice ( pcPic, iPOCLast, pocCurr, iNumPicRcvd, iGOPid, pcSlice, isField );
 
 	// pixel resample
-	// Tsinghua
-#if ENABLE_PICTURE_RESAMPLING
+#if PGR_ENABLE
 
+	if (pcSlice->getSliceType() == I_SLICE)
+	{
+		// init estimation data before resampling
+		m_pcEncTop->getCuEncoder()->initEstPGR(pcPic->getPicYuvOrg());
+		pcPic->getPicYuvOrg()->resample(pcSlice->getSPS()->getMaxCUWidth(), pcSlice->getSPS()->getMaxCUHeight(), false);
+	}
+		
 
-	//pcPic->getPicYuvOrg()->resample()
-	//pcPicYuvOrg->resample(m_uiMaxCUWidth, m_uiMaxCUHeight, false);
-	//cPicYuvTrueOrg.resample(m_uiMaxCUWidth, m_uiMaxCUHeight, false);
-	/*TVideoIOYuv resampled;
-	resampled.open("resampled.yuv", true, m_inputBitDepth, m_MSBExtendedBitDepth ,m_internalBitDepth);
-	resampled.write(pcPicYuvOrg, (!m_outputInternalColourSpace) ? m_inputColourSpaceConvert : IPCOLOURSPACE_UNCHANGED, m_confWinLeft, m_confWinRight, m_confWinTop, m_confWinBottom);
-	resampled.close();
-	pcPicYuvOrg->resample(m_uiMaxCUWidth, m_uiMaxCUHeight, true);
-	resampled.open("resampled_inverse.yuv", true, m_inputBitDepth, m_MSBExtendedBitDepth, m_internalBitDepth);
-	resampled.write(pcPicYuvOrg, (!m_outputInternalColourSpace) ? m_inputColourSpaceConvert : IPCOLOURSPACE_UNCHANGED, m_confWinLeft, m_confWinRight, m_confWinTop, m_confWinBottom);
-	resampled.close();*/
 #endif
 
     //Set Frame/Field coding

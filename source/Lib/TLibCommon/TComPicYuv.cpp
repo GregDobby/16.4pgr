@@ -353,7 +353,7 @@ Void TComPicYuv::DefaultConvertPix(TComPicYuv* pcSrcPicYuv, const BitDepths& bit
 *	param:	uiMaxCUHeight		used for generating sample stride in vertical direction
 *	param:	inverse				false for forward direction; true for backward direction
 */
-Void TComPicYuv::resample(UInt uiMaxCUWidth, UInt uiMaxCUHeight, Bool bInverse = false)
+Void TComPicYuv::resample(UInt uiMaxCUWidth, UInt uiMaxCUHeight, Bool bInverse)
 {
 	assert(uiMaxCUWidth != 0 && uiMaxCUHeight != 0);
 
@@ -371,8 +371,8 @@ Void TComPicYuv::resample(UInt uiMaxCUWidth, UInt uiMaxCUHeight, Bool bInverse =
 		UInt uiStrideXplus1 = uiStrideX + 1;
 		UInt uiStrideYplus1 = uiStrideY + 1;
 
-		UInt uiNumberUseBiggerStrideX = uiPicWidth % uiStrideX;		// number of bigger strides in x direction
-		UInt uiNumberUseBiggerStrideY = uiPicHeight % uiStrideY;	// number of bigger strides in y direction
+		UInt uiNumberUseBiggerStrideX = uiPicWidth % uiMaxCUWidth;		// number of bigger strides in x direction
+		UInt uiNumberUseBiggerStrideY = uiPicHeight % uiMaxCUHeight;	// number of bigger strides in y direction
 		
 		// allocate  pixels memory
 		Pel *piPicTmpBuf, *piPicTmpOrg;

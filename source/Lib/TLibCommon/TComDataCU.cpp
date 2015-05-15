@@ -145,6 +145,10 @@ Void TComDataCU::create( ChromaFormat chromaFormatIDC, UInt uiNumPartition, UInt
 
   m_PLTMaxSize     = uiPLTMaxSize;
   m_PLTMaxPredSize = uiPLTMaxPredSize;
+
+#if PGR_ENABLE
+  m_uiMaxSizeResiPLT[COMPONENT_Y] = m_uiMaxSizeResiPLT[COMPONENT_Cb] = m_uiMaxSizeResiPLT[COMPONENT_Cr] = PLT_SIZE_INVALID;
+#endif
   if ( !bDecSubCu )
   {
     m_phQP               = (Char*     )xMalloc(Char,     uiNumPartition);
