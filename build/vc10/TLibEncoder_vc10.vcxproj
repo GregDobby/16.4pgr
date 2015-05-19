@@ -170,7 +170,6 @@
   <ItemGroup>
     <ClInclude Include="..\..\source\Lib\TLibEncoder\AnnexBwrite.h" />
     <ClInclude Include="..\..\source\Lib\TLibEncoder\NALwrite.h" />
-    <ClInclude Include="..\..\source\Lib\TLibEncoder\PixelPrediction.h" />
     <ClInclude Include="..\..\source\Lib\TLibEncoder\SEIEncoder.h" />
     <ClInclude Include="..\..\source\Lib\TLibEncoder\SEIwrite.h" />
     <ClInclude Include="..\..\source\Lib\TLibEncoder\SyntaxElementWriter.h" />

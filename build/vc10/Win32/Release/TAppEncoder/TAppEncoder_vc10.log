@@ -1,0 +1,23 @@
+﻿Build started 2015/5/18 15:47:49.
+     1>Project "D:\HM-16.4+SCM-4.0\build\vc10\TAppEncoder_vc10.vcxproj" on node 2 (Build target(s)).
+     1>ClCompile:
+         C:\Program Files (x86)\Microsoft Visual Studio 12.0\VC\bin\CL.exe /c /I"D:\HM-16.4+SCM-4.0\build\\..\source\Lib\\" /I"D:\HM-16.4+SCM-4.0\build\\..\compat\msvc" /Zi /nologo /W3 /WX- /O2 /Ob2 /Ot /Oy- /GL /D WIN32 /D _CONSOLE /D _CRT_SECURE_NO_WARNINGS /D _MBCS /GF /Gm- /EHsc /MT /GS /Gy /fp:precise /Zc:wchar_t /Zc:forScope /Fo"D:\HM-16.4+SCM-4.0\build\\vc10\Win32\Release\TAppEncoder\\" /Fd"D:\HM-16.4+SCM-4.0\build\\vc10\Win32\Release\TAppEncoder\vc120.pdb" /Gd /TP /analyze- /errorReport:prompt ..\..\source\App\TAppEncoder\encmain.cpp ..\..\source\App\TAppEncoder\TAppEncCfg.cpp ..\..\source\App\TAppEncoder\TAppEncTop.cpp
+         encmain.cpp
+         TAppEncCfg.cpp
+         TAppEncTop.cpp
+       Link:
+         C:\Program Files (x86)\Microsoft Visual Studio 12.0\VC\bin\link.exe /ERRORREPORT:PROMPT /OUT:"D:\HM-16.4+SCM-4.0\build\\..\bin\vc10\Win32\Release\TAppEncoder.exe" /INCREMENTAL:NO /NOLOGO kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib odbc32.lib odbccp32.lib /MANIFEST /MANIFESTUAC:"level='asInvoker' uiAccess='false'" /manifest:embed /DEBUG /PDB:"D:\HM-16.4+SCM-4.0\build\\..\bin\vc10\Win32\Release\TAppEncoder.pdb" /SUBSYSTEM:CONSOLE /LTCG /TLBID:1 /DYNAMICBASE /NXCOMPAT /IMPLIB:"D:\HM-16.4+SCM-4.0\build\\..\bin\vc10\Win32\Release\TAppEncoder.lib" /MACHINE:X86 /SAFESEH "D:\HM-16.4+SCM-4.0\build\\vc10\Win32\Release\TAppEncoder\encmain.obj"
+         "D:\HM-16.4+SCM-4.0\build\\vc10\Win32\Release\TAppEncoder\TAppEncCfg.obj"
+         "D:\HM-16.4+SCM-4.0\build\\vc10\Win32\Release\TAppEncoder\TAppEncTop.obj"
+         "D:\HM-16.4+SCM-4.0\build\vc10\Win32\Release\TAppCommon\TAppCommon.lib"
+         "D:\HM-16.4+SCM-4.0\build\vc10\Win32\Release\TLibCommon\TLibCommon.lib"
+         "D:\HM-16.4+SCM-4.0\build\vc10\Win32\Release\TLibEncoder\TLibEncoder.lib"
+         "D:\HM-16.4+SCM-4.0\build\vc10\Win32\Release\TLibVideoIo\TLibVideoIO.lib"
+         Generating code
+         Finished generating code
+         TAppEncoder_vc10.vcxproj -> D:\HM-16.4+SCM-4.0\build\\..\bin\vc10\Win32\Release\TAppEncoder.exe
+     1>Done Building Project "D:\HM-16.4+SCM-4.0\build\vc10\TAppEncoder_vc10.vcxproj" (Build target(s)).
+
+Build succeeded.
+
+Time Elapsed 00:00:14.66

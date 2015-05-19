@@ -52,7 +52,7 @@
 
 #if PGR_ENABLE
 
-#include "PixelPrediction.h"
+#include "TLibCommon/PixelPrediction.h"
 
 #endif
 
@@ -93,10 +93,6 @@ private:
 	TComYuv*				m_pcResiYuvPGR;	  ///< residue yuv using pgr method
 	// ---- Template Match ----
 	Pixel*					m_pPixel[MAX_NUM_COMPONENT];						///< pixel data
-	PixelTemplate*			m_pPixelTemplate[MAX_NUM_COMPONENT][MAX_PT_NUM];	///< hash table
-	vector<PixelTemplate*>	m_pPixelTemplatePool;								///< convinient for releasing memory
-
-	
 #endif
 
 	//  Data : encoder control
@@ -133,8 +129,8 @@ public:
 	// init estimation data
 	Void  initEstPGR(TComPicYuv* pcPicYuvOrg);
 
-	// release pixeltemplate memory
-	Void releasePixelTemplate();
+	// update pixels after compressing
+	Void updatePixelAfterCompressing(TComDataCU* pCtu);
 #endif
 
 	/// destroy internal buffers
@@ -155,7 +151,7 @@ protected:
 	Void  xCompressCU(TComDataCU*& rpcBestCU, TComDataCU*& rpcTempCU, UInt uiDepth DEBUG_STRING_FN_DECLARE(sDebug), PartSize eParentPartSize = NUMBER_OF_PART_SIZES);
 
 #if PGR_ENABLE
-	Void  xCompressCUPGR(TComDataCU*& rpcBestCU, TComDataCU*& rpcTempCU); // UInt uiDepth DEBUG_STRING_FN_DECLARE(sDebug), PartSize eParentPartSize = NUMBER_OF_PART_SIZES);
+	Void  xCompressCUPGR(TComDataCU*& rpcBestCU, TComDataCU*& rpcTempCU, UInt uiDepth); // UInt uiDepth DEBUG_STRING_FN_DECLARE(sDebug), PartSize eParentPartSize = NUMBER_OF_PART_SIZES);
 	
 	Void  preDefaultMethod(TComDataCU*& rpcTempCU);		// to predict every pixel in the given CU using default method which is  predicted in the process before
 

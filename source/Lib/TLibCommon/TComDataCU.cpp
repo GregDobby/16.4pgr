@@ -146,9 +146,6 @@ Void TComDataCU::create( ChromaFormat chromaFormatIDC, UInt uiNumPartition, UInt
   m_PLTMaxSize     = uiPLTMaxSize;
   m_PLTMaxPredSize = uiPLTMaxPredSize;
 
-#if PGR_ENABLE
-  m_uiMaxSizeResiPLT[COMPONENT_Y] = m_uiMaxSizeResiPLT[COMPONENT_Cb] = m_uiMaxSizeResiPLT[COMPONENT_Cr] = PLT_SIZE_INVALID;
-#endif
   if ( !bDecSubCu )
   {
     m_phQP               = (Char*     )xMalloc(Char,     uiNumPartition);
@@ -220,6 +217,9 @@ Void TComDataCU::create( ChromaFormat chromaFormatIDC, UInt uiNumPartition, UInt
 
     m_pbIPCMFlag         = (Bool*  )xMalloc(Bool, uiNumPartition);
     m_pbPLTModeFlag             = (Bool*)xMalloc(Bool, uiNumPartition);
+#if PGR_ENABLE
+	m_pbPGRFlag = (Bool*)xMalloc(Bool,uiNumPartition);
+#endif
 #if !SCM_T0064_REMOVE_PLT_SHARING
     m_pbPLTSharingModeFlag      = (Bool*)xMalloc(Bool, uiNumPartition);
 #endif
@@ -435,6 +435,16 @@ Void TComDataCU::destroy()
     m_apcCUColocated[i]  = NULL;
   }
 
+#if PGR_ENABLE
+
+  if(m_pbPGRFlag)
+  {
+	  xFree(m_pbPGRFlag);
+	  m_pbPGRFlag = NULL;
+  }
+
+#endif
+
 }
 
 Bool TComDataCU::CUIsFromSameTile            ( const TComDataCU *pCU /* Can be NULL */) const
@@ -520,6 +530,9 @@ Void TComDataCU::initCtu( TComPic* pcPic, UInt ctuRsAddr )
     }
   }
 
+#if PGR_ENABLE
+  memset(m_pbPGRFlag		  , false,						m_uiNumPartition*sizeof(*m_pbPGRFlag));
+#endif
 
   memset( m_skipFlag          , false,                      m_uiNumPartition * sizeof( *m_skipFlag ) );
 
@@ -841,6 +854,10 @@ Void TComDataCU::initSubCU( TComDataCU* pcCU, UInt uiPartUnitIdx, UInt uiDepth, 
   memset( m_pbPLTSharingModeFlag,      0, iSizeInBool );
 #endif
   memset( m_pbPLTScanRotationModeFlag, 0, iSizeInBool );
+
+#if PGR_ENABLE
+  memset(m_pbPGRFlag, 0, iSizeInBool);
+#endif
 
   for (UInt ui = 0; ui < m_uiNumPartition; ui++)
   {
@@ -2296,6 +2313,13 @@ Void TComDataCU::setCbfSubParts( UInt uiCbf, ComponentID compID, UInt uiAbsPartI
  * \param uiPartIdx
  * \param uiDepth
  */
+#if PGR_ENABLE
+Void  TComDataCU::setPGRFlagSubParts(Bool b, UInt absPartIdx, UInt uiDepth)
+{
+	UInt uiPartNumb = m_pcPic->getNumPartitionsInCtu() >> (uiDepth << 1);
+	memset( m_pbPGRFlag + absPartIdx, b, uiPartNumb);
+}
+#endif
 Void TComDataCU::setCbfSubParts ( UInt uiCbf, ComponentID compID, UInt uiAbsPartIdx, UInt uiPartIdx, UInt uiDepth )
 {
   setSubPart<UChar>( uiCbf, m_puhCbf[compID], uiAbsPartIdx, uiDepth, uiPartIdx );

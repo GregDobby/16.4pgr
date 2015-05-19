@@ -51,7 +51,7 @@
 
 #if PGR_ENABLE
 
-#include "TLibEncoder/PixelPrediction.h"
+#include "TLibCommon/PixelPrediction.h"
 
 #endif
 
@@ -120,12 +120,7 @@ private:
   Bool*          m_ColourTransform; 
 
 #if PGR_ENABLE
-  // ---- Revise Anomaly Residue ----
-  UInt						m_uiMaxSizeResiPLT[MAX_NUM_COMPONENT];				///< maximum size of residue palette
-  vector<ResiPLTInfo>		m_vResiPLTInfo[MAX_NUM_COMPONENT];					///< anomaly residue: processed information
-  vector<Pel>				m_vResiPLT[MAX_NUM_COMPONENT];						///< current residue palette
-  vector<Pel>				m_vLastResiPLT[MAX_NUM_COMPONENT];					///< previous residue palette
-  vector<UChar>				m_vLastResiPLTReusedFlag[MAX_NUM_COMPONENT];		///< reused flag
+  Bool*						m_pbPGRFlag;										///< pgr flag
 #endif
 
   // -------------------------------------------------------------------------------------------------------------------
@@ -262,6 +257,13 @@ public:
   // -------------------------------------------------------------------------------------------------------------------
   // member functions for CU data
   // -------------------------------------------------------------------------------------------------------------------
+
+#if PGR_ENABLE
+  Bool* getPGRFlag					   ()						{ return m_pbPGRFlag; }
+  Bool  getPGRFlag                     (UInt idx)				{ return m_pbPGRFlag[idx]; }
+  Void  setPGRFlag					   (UInt idx, Bool b)       { m_pbPGRFlag[idx] = b; }
+  Void  setPGRFlagSubParts(Bool b, UInt absPartIdx, UInt depth);
+#endif
 
 #if SCM_T0227_INTRABC_SIG_UNIFICATION
   Void          getStartPosition( UInt uiPartIdx, Int& xStartInCU, Int& yStartInCU );

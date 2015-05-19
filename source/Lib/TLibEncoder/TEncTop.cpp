@@ -98,6 +98,7 @@ Void TEncTop::create ()
      );
 
 #if PGR_ENABLE
+  initCoordinateMap(getSourceWidth(), getSourceHeight(), m_maxCUWidth, m_maxCUHeight, m_chromaFormatIDC);
   m_cCuEncoder.			createPGR(getSourceWidth(), getSourceHeight(), m_chromaFormatIDC);
 #endif
 
@@ -186,6 +187,10 @@ Void TEncTop::destroy ()
 
   // destroy ROM
   destroyROM();
+
+#if PGR_ENABLE
+
+#endif
 
   return;
 }

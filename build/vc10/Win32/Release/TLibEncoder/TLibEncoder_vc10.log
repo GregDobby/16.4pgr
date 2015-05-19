@@ -1,0 +1,49 @@
+﻿Build started 2015/5/18 15:47:35.
+     1>Project "D:\HM-16.4+SCM-4.0\build\vc10\TLibEncoder_vc10.vcxproj" on node 4 (Build target(s)).
+     1>ClCompile:
+         C:\Program Files (x86)\Microsoft Visual Studio 12.0\VC\bin\CL.exe /c /I"D:\HM-16.4+SCM-4.0\build\\..\source\Lib\\" /I"D:\HM-16.4+SCM-4.0\build\\..\compat\msvc" /Zi /nologo /W3 /WX- /O2 /Ob2 /Ot /Oy- /GL /D WIN32 /D _LIB /D _CRT_SECURE_NO_WARNINGS /D _MBCS /GF /Gm- /EHsc /MT /GS /Gy /fp:precise /Zc:wchar_t /Zc:forScope /Fo"D:\HM-16.4+SCM-4.0\build\\vc10\Win32\Release\TLibEncoder\\" /Fd"D:\HM-16.4+SCM-4.0\build\\vc10\Win32\Release\TLibEncoder\vc120.pdb" /Gd /TP /analyze- /errorReport:prompt ..\..\source\Lib\TLibEncoder\NALwrite.cpp ..\..\source\Lib\TLibEncoder\SEIEncoder.cpp ..\..\source\Lib\TLibEncoder\SEIwrite.cpp ..\..\source\Lib\TLibEncoder\SyntaxElementWriter.cpp ..\..\source\Lib\TLibEncoder\TEncBinCoderCABAC.cpp ..\..\source\Lib\TLibEncoder\TEncBinCoderCABACCounter.cpp ..\..\source\Lib\TLibEncoder\TEncCavlc.cpp ..\..\source\Lib\TLibEncoder\TEncCu.cpp ..\..\source\Lib\TLibEncoder\TEncEntropy.cpp ..\..\source\Lib\TLibEncoder\TEncGOP.cpp ..\..\source\Lib\TLibEncoder\TEncPic.cpp ..\..\source\Lib\TLibEncoder\TEncPreanalyzer.cpp ..\..\source\Lib\TLibEncoder\TEncRateCtrl.cpp ..\..\source\Lib\TLibEncoder\TEncSampleAdaptiveOffset.cpp ..\..\source\Lib\TLibEncoder\TEncSbac.cpp ..\..\source\Lib\TLibEncoder\TEncSearch.cpp ..\..\source\Lib\TLibEncoder\TEncSlice.cpp ..\..\source\Lib\TLibEncoder\TEncTop.cpp ..\..\source\Lib\TLibEncoder\WeightPredAnalysis.cpp
+         NALwrite.cpp
+         SEIEncoder.cpp
+         SEIwrite.cpp
+         SyntaxElementWriter.cpp
+         TEncBinCoderCABAC.cpp
+         TEncBinCoderCABACCounter.cpp
+         TEncCavlc.cpp
+         TEncCu.cpp
+         TEncEntropy.cpp
+         TEncGOP.cpp
+         TEncPic.cpp
+         TEncPreanalyzer.cpp
+         TEncRateCtrl.cpp
+         TEncSampleAdaptiveOffset.cpp
+         TEncSbac.cpp
+         TEncSearch.cpp
+         TEncSlice.cpp
+         TEncTop.cpp
+         WeightPredAnalysis.cpp
+       Lib:
+         C:\Program Files (x86)\Microsoft Visual Studio 12.0\VC\bin\Lib.exe /OUT:"D:\HM-16.4+SCM-4.0\build\\vc10\Win32\Release\TLibEncoder\TLibEncoder.lib" /NOLOGO /LTCG "D:\HM-16.4+SCM-4.0\build\\vc10\Win32\Release\TLibEncoder\NALwrite.obj"
+         "D:\HM-16.4+SCM-4.0\build\\vc10\Win32\Release\TLibEncoder\SEIEncoder.obj"
+         "D:\HM-16.4+SCM-4.0\build\\vc10\Win32\Release\TLibEncoder\SEIwrite.obj"
+         "D:\HM-16.4+SCM-4.0\build\\vc10\Win32\Release\TLibEncoder\SyntaxElementWriter.obj"
+         "D:\HM-16.4+SCM-4.0\build\\vc10\Win32\Release\TLibEncoder\TEncBinCoderCABAC.obj"
+         "D:\HM-16.4+SCM-4.0\build\\vc10\Win32\Release\TLibEncoder\TEncBinCoderCABACCounter.obj"
+         "D:\HM-16.4+SCM-4.0\build\\vc10\Win32\Release\TLibEncoder\TEncCavlc.obj"
+         "D:\HM-16.4+SCM-4.0\build\\vc10\Win32\Release\TLibEncoder\TEncCu.obj"
+         "D:\HM-16.4+SCM-4.0\build\\vc10\Win32\Release\TLibEncoder\TEncEntropy.obj"
+         "D:\HM-16.4+SCM-4.0\build\\vc10\Win32\Release\TLibEncoder\TEncGOP.obj"
+         "D:\HM-16.4+SCM-4.0\build\\vc10\Win32\Release\TLibEncoder\TEncPic.obj"
+         "D:\HM-16.4+SCM-4.0\build\\vc10\Win32\Release\TLibEncoder\TEncPreanalyzer.obj"
+         "D:\HM-16.4+SCM-4.0\build\\vc10\Win32\Release\TLibEncoder\TEncRateCtrl.obj"
+         "D:\HM-16.4+SCM-4.0\build\\vc10\Win32\Release\TLibEncoder\TEncSampleAdaptiveOffset.obj"
+         "D:\HM-16.4+SCM-4.0\build\\vc10\Win32\Release\TLibEncoder\TEncSbac.obj"
+         "D:\HM-16.4+SCM-4.0\build\\vc10\Win32\Release\TLibEncoder\TEncSearch.obj"
+         "D:\HM-16.4+SCM-4.0\build\\vc10\Win32\Release\TLibEncoder\TEncSlice.obj"
+         "D:\HM-16.4+SCM-4.0\build\\vc10\Win32\Release\TLibEncoder\TEncTop.obj"
+         "D:\HM-16.4+SCM-4.0\build\\vc10\Win32\Release\TLibEncoder\WeightPredAnalysis.obj"
+         TLibEncoder_vc10.vcxproj -> D:\HM-16.4+SCM-4.0\build\\vc10\Win32\Release\TLibEncoder\TLibEncoder.lib
+     1>Done Building Project "D:\HM-16.4+SCM-4.0\build\vc10\TLibEncoder_vc10.vcxproj" (Build target(s)).
+
+Build succeeded.
+
+Time Elapsed 00:00:11.02

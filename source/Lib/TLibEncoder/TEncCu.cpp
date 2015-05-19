@@ -71,7 +71,7 @@ Void  TEncCu::initEstPGR(TComPicYuv* pcPicYuvOrg)
 {
 	UInt uiNumValidComponent = m_pcResiYuvPGR->getNumberValidComponents();
 	// release hash table memory
-	releasePixelTemplate();
+	::releaseMemoryPTHashTable();
 	for (int ch = 0; ch < uiNumValidComponent; ch++)
 	{
 		ComponentID cId = ComponentID(ch);
@@ -81,8 +81,9 @@ Void  TEncCu::initEstPGR(TComPicYuv* pcPicYuvOrg)
 		// init hashtable
 		for (int i = 0; i < MAX_PT_NUM; i++)
 		{
-			m_pPixelTemplate[cId][i] = NULL;
+			g_pPixelTemplate[cId][i] = NULL;
 		}
+
 		// init pixel data
 		if (m_pPixel[cId] == NULL)
 			m_pPixel[cId] = new Pixel[(uiPicWidth + 2 * EXTEG)*(uiPicHeight + 2 * EXTEG)];
@@ -121,8 +122,8 @@ Void  TEncCu::initEstPGR(TComPicYuv* pcPicYuvOrg)
 		}
 
 		// init residue
-		Pel* pBuffer = m_pcResiYuvPGR->getAddr(cId);
-		UInt uiStride = m_pcResiYuvPGR->getStride(cId);
+		pBuffer = m_pcResiYuvPGR->getAddr(cId);
+		uiStride = m_pcResiYuvPGR->getStride(cId);
 		for (UInt uiY = 0; uiY < uiPicHeight; uiY++)
 		{
 			for (UInt uiX = 0; uiX < uiPicWidth; uiX++)
@@ -135,15 +136,6 @@ Void  TEncCu::initEstPGR(TComPicYuv* pcPicYuvOrg)
 	
 }
 
-Void TEncCu::releasePixelTemplate()
-{
-	for (int i = 0; i < m_pPixelTemplatePool.size(); i++)
-	{
-		delete m_pPixelTemplatePool[i];
-		m_pPixelTemplatePool[i] = NULL;
-	}
-	m_pPixelTemplatePool.clear();
-}
 #endif
 
 /**
@@ -201,6 +193,10 @@ Void TEncCu::create(UChar uhTotalDepth, UInt uiMaxWidth, UInt uiMaxHeight, Chrom
   m_bEncodeDQP          = false;
   m_CodeChromaQpAdjFlag = false;
   m_ChromaQpAdjIdc      = 0;
+
+#if PGR_ENABLE
+  m_pPixel[COMPONENT_Y] = m_pPixel[COMPONENT_Cb] = m_pPixel[COMPONENT_Cr] = NULL;
+#endif
 
   // initialize partition order.
   UInt* piTmp = &g_auiZscanToRaster[0];
@@ -323,19 +319,13 @@ Void TEncCu::destroy()
 	  delete m_pcRecoYuvPGR;
 	  m_pcRecoYuvPGR = NULL;
   }
-  if (m_pPixelTemplatePool.size() > 0)
-  {
-	  releasePixelTemplate();
-  }
+
+  ::releaseMemoryPTHashTable();
 
   UInt uiNumValidComponent = m_pcResiYuvPGR->getNumberValidComponents();
   for (int ch = 0; ch < uiNumValidComponent; ch++)
   {
 	  ComponentID cId = ComponentID(ch);	  
-	  for (int i = 0; i < MAX_PT_NUM; i++)
-	  {
-		  m_pPixelTemplate[cId][i] = NULL;
-	  }
 	  if (m_pPixel[cId])
 	  {
 		  delete[] m_pPixel[cId];
@@ -344,6 +334,7 @@ Void TEncCu::destroy()
   }
 
 #endif
+
 }
 
 /** \param    pcEncTop      pointer of encoder class
@@ -398,12 +389,16 @@ Void TEncCu::compressCtu( TComDataCU* pCtu, UChar* lastPLTSize, UChar* lastPLTUs
 #if PGR_ENABLE
   // for intra frame, use PGR method
   if (pCtu->getSlice()->getSliceType() == I_SLICE)
-	  xCompressCUPGR(m_ppcBestCU[0],m_ppcTempCU[0]);
+	  xCompressCUPGR(m_ppcBestCU[0],m_ppcTempCU[0], 0);
   else
 	  xCompressCU(m_ppcBestCU[0], m_ppcTempCU[0], 0 DEBUG_STRING_PASS_INTO(sDebug));
+
+  // deal with reconstructed pixels
+  updatePixelAfterCompressing(pCtu);
 #else
   xCompressCU( m_ppcBestCU[0], m_ppcTempCU[0], 0 DEBUG_STRING_PASS_INTO(sDebug) );
 #endif
+
   DEBUG_STRING_OUTPUT(std::cout, sDebug)
 
 #if ADAPTIVE_QP_SELECTION
@@ -1627,28 +1622,184 @@ Void TEncCu::xCompressCU( TComDataCU*& rpcBestCU, TComDataCU*& rpcTempCU, UInt u
 
 #if PGR_ENABLE
 // compress CU using PGR method
-Void  TEncCu::xCompressCUPGR(TComDataCU*& rpcBestCU, TComDataCU*& rpcTempCU)
+Void  TEncCu::xCompressCUPGR(TComDataCU*& rpcBestCU, TComDataCU*& rpcTempCU, UInt uiDepth)
 {
+	// CU rectangle
+	UInt uiLPelX = rpcBestCU->getCUPelX();
+	UInt uiRPelX = uiLPelX + rpcBestCU->getWidth(0) - 1;
+	UInt uiTPelY = rpcBestCU->getCUPelY();
+	UInt uiBPelY = uiTPelY + rpcBestCU->getHeight(0) - 1;
+	// QP range
+	Int iBaseQP = xComputeQP(rpcBestCU, uiDepth);
+	Int iMinQP;
+	Int iMaxQP;
+	Bool isAddLowestQP = false;
+
+	const UInt numberValidComponents = rpcBestCU->getPic()->getNumberValidComponents();
+	
+	// handler
+	TComPic* pcPic = rpcBestCU->getPic();
+	DEBUG_STRING_NEW(sDebug)
+	const TComPPS &pps = *(rpcTempCU->getSlice()->getPPS());
+	const TComSPS &sps = *(rpcTempCU->getSlice()->getSPS());
+	TComSlice * pcSlice = rpcTempCU->getPic()->getSlice(rpcTempCU->getPic()->getCurrSliceIdx());
+
+	// set QP range
+	if (uiDepth <= pps.getMaxCuDQPDepth())
+	{
+		Int idQP = m_pcEncCfg->getMaxDeltaQP();
+		iMinQP = Clip3(-sps.getQpBDOffset(CHANNEL_TYPE_LUMA), MAX_QP, iBaseQP - idQP);
+		iMaxQP = Clip3(-sps.getQpBDOffset(CHANNEL_TYPE_LUMA), MAX_QP, iBaseQP + idQP);
+	}
+	else
+	{
+		iMinQP = rpcTempCU->getQP(0);
+		iMaxQP = rpcTempCU->getQP(0);
+	}
+
+	if (m_pcEncCfg->getUseRateCtrl())
+	{
+		iMinQP = m_pcRateCtrl->getRCQP();
+		iMaxQP = m_pcRateCtrl->getRCQP();
+	}
+
+	// transquant-bypass (TQB) processing loop variable initialisation ---
+	// lossless compression
+	const Int lowestQP = iMinQP; // For TQB, use this QP which is the lowest non TQB QP tested (rather than QP'=0) - that way delta QPs are smaller, and TQB can be tested at all CU levels.
+
+	if ((pps.getTransquantBypassEnableFlag()))
+	{
+		isAddLowestQP = true; // mark that the first iteration is to cost TQB mode.
+		iMinQP = iMinQP - 1;  // increase loop variable range by 1, to allow testing of TQB mode along with other QPs
+		if (m_pcEncCfg->getCUTransquantBypassFlagForceValue())
+		{
+			iMaxQP = iMinQP;
+		}
+	}
+
+	// get Original YUV data from picture, uiDepth -> 0
+	m_ppcOrigYuv[uiDepth]->copyFromPicYuv(rpcTempCU->getPic()->getPicYuvOrg(), rpcBestCU->getCtuRsAddr(), rpcBestCU->getZorderIdxInCtu());
+
 	// ---- prediction using default method(Template Matching) ----
 	preDefaultMethod(rpcTempCU);
-	// ---- rpcBestCU totalcost initialization needed ----
 
-	UInt uiResiThreshold;			
-	UInt uiThresholdIncrement;		// uiResiThreshold updating step, to be setted
+	// loop all possible QP values
+	for (Int iQP = iMinQP; iQP <= iMaxQP; iQP++)
+	{
+		const Bool bIsLosslessMode = isAddLowestQP && (iQP == iMinQP);
+
+		if (bIsLosslessMode)
+		{
+			iQP = lowestQP;
+		}
+
+		m_ChromaQpAdjIdc = 0;
+
+		// QP chroma adjustment
+		if (pcSlice->getUseChromaQpAdj())
+		{
+			/* Pre-estimation of chroma QP based on input block activity may be performed
+			* here, using for example m_ppcOrigYuv[uiDepth] */
+			/* To exercise the current code, the index used for adjustment is based on
+			* block position
+			*/
+			Int lgMinCuSize = sps.getLog2MinCodingBlockSize() +
+				std::max<Int>(0, sps.getLog2DiffMaxMinCodingBlockSize() - Int(pps.getMaxCuChromaQpAdjDepth()));
+			m_ChromaQpAdjIdc = ((uiLPelX >> lgMinCuSize) + (uiTPelY >> lgMinCuSize)) % (pps.getChromaQpAdjTableSize() + 1);
+		}
+
+		// ---- initialize estimation data ----
+		rpcTempCU->initEstData(uiDepth, iQP, bIsLosslessMode);		// need a new method maybe
+		// ---- transform including rdcost calculating ----
+		xCheckPRGResidue(rpcBestCU, rpcTempCU);
+	}
+	
+}
+
+// xCheckPGRResidue
+Void TEncCu::xCheckPRGResidue(TComDataCU*& rpcBestCU, TComDataCU*& rpcTempCU)
+{
+
+	// --- set cu data ---
+	UInt uiDepth = rpcTempCU->getDepth(0);					///< uiDepth -> 0
+
+	rpcTempCU->setPGRFlagSubParts(true, 0, uiDepth);
+
+	rpcTempCU->setSkipFlagSubParts(false, 0, uiDepth);															///< skipflag -> false
+	rpcTempCU->setPartSizeSubParts(SIZE_2Nx2N, 0, uiDepth);													    ///< partsize -> SIZE_2Nx2N
+	rpcTempCU->setPredModeSubParts(MODE_INTRA, 0, uiDepth);														///< predMode -> MODE_INTRA
+	rpcTempCU->setChromaQpAdjSubParts(rpcTempCU->getCUTransquantBypass(0) ? 0 : m_ChromaQpAdjIdc, 0, uiDepth);  ///< chromaQPAdj
+	rpcTempCU->setColourTransformSubParts(false, 0, uiDepth);													///< colorTransform -> false
+
+
+	UInt uiResiThreshold;
+	UInt uiThresholdIncrement = 20;		// uiResiThreshold updating step, to be setted
 	UInt uiMinThreshold, uiMaxThreshold; // minimum and maximum value of uiResiThreshold, to be setted
+	uiMinThreshold = uiMaxThreshold = 20;
 
 	// loop
 	// try different uiResiTreshold
-	for (uiResiThreshold = uiMinThreshold; uiResiThreshold < uiMaxThreshold; uiResiThreshold += uiThresholdIncrement)
+	for (uiResiThreshold = uiMinThreshold; uiResiThreshold < uiMaxThreshold + 1; uiResiThreshold += uiThresholdIncrement)
 	{
-		// ---- revise anomaly residue using different methods ----
-		reviseAnomalyResidue(rpcTempCU,uiResiThreshold);
 		
-		// ---- transform including rdcost calculating ----
-		xCheckPRGResidue(rpcBestCU, rpcTempCU);
 
-		// ---- initialize estimation data ----
-		rpcTempCU->initEstData(0, 0, 0);		// need a new method maybe
+		m_ppcPredYuvTemp[0]->copyFromPicYuv(rpcTempCU->getPic()->getPicYuvPred(), rpcTempCU->getCtuRsAddr(), rpcTempCU->getZorderIdxInCtu());
+		m_ppcResiYuvTemp[0]->copyFromPicYuv(rpcTempCU->getPic()->getPicYuvResi(), rpcTempCU->getCtuRsAddr(), rpcTempCU->getZorderIdxInCtu());
+
+		// ---- revise anomaly residue using different methods ----
+		reviseAnomalyResidue(rpcTempCU, uiResiThreshold);
+
+		m_pcPredSearch->estPGRLumaQT(rpcTempCU, m_ppcOrigYuv[uiDepth], m_ppcPredYuvTemp[uiDepth], m_ppcResiYuvTemp[uiDepth], m_ppcRecoYuvTemp[uiDepth]);
+
+		m_ppcRecoYuvTemp[uiDepth]->copyToPicComponent(COMPONENT_Y, rpcTempCU->getPic()->getPicYuvRec(), rpcTempCU->getCtuRsAddr(), rpcTempCU->getZorderIdxInCtu());
+
+		if (rpcBestCU->getPic()->getChromaFormat() != CHROMA_400)
+		{
+			m_pcPredSearch->estPGRChromaQT(rpcTempCU, m_ppcOrigYuv[uiDepth], m_ppcPredYuvTemp[uiDepth], m_ppcResiYuvTemp[uiDepth], m_ppcRecoYuvTemp[uiDepth]);
+		}
+
+		m_pcEntropyCoder->resetBits();
+
+		if (rpcTempCU->getSlice()->getPPS()->getTransquantBypassEnableFlag())
+		{
+			m_pcEntropyCoder->encodeCUTransquantBypassFlag(rpcTempCU, 0, true);
+		}
+
+		m_pcEntropyCoder->encodeSkipFlag(rpcTempCU, 0, true);
+		
+		// encode pgr flag
+#if !SCM_T0227_INTRABC_SIG_UNIFICATION
+		if (rpcTempCU->getSlice()->getSPS()->getUseIntraBlockCopy())
+		{
+			m_pcEntropyCoder->encodeIntraBCFlag(rpcTempCU, 0, true);
+		}
+#endif
+
+		m_pcEntropyCoder->encodePredMode(rpcTempCU, 0, true);
+		m_pcEntropyCoder->encodePartSize(rpcTempCU, 0, uiDepth, true);
+		// 
+		//m_pcEntropyCoder->encodePredInfo(rpcTempCU, 0);
+		//m_pcEntropyCoder->encodeIPCMInfo(rpcTempCU, 0, true);
+
+		// Encode Coefficients
+		Bool bCodeDQP = getdQPFlag();
+		Bool codeChromaQpAdjFlag = getCodeChromaQpAdjFlag();
+		m_pcEntropyCoder->encodeCoeff(rpcTempCU, 0, uiDepth, bCodeDQP, codeChromaQpAdjFlag);
+		setCodeChromaQpAdjFlag(codeChromaQpAdjFlag);
+		setdQPFlag(bCodeDQP);
+
+		m_pcRDGoOnSbacCoder->store(m_pppcRDSbacCoder[uiDepth][CI_TEMP_BEST]);
+
+		rpcTempCU->getTotalBits() = m_pcEntropyCoder->getNumberOfWrittenBits();
+		rpcTempCU->getTotalBins() = ((TEncBinCABAC *)((TEncSbac*)m_pcEntropyCoder->m_pcEntropyCoderIf)->getEncBinIf())->getBinsCoded();
+		rpcTempCU->getTotalCost() = m_pcRdCost->calcRdCost(rpcTempCU->getTotalBits(), rpcTempCU->getTotalDistortion());
+
+		xCheckDQP(rpcTempCU);
+
+		Double cost = rpcTempCU->getTotalCost();
+
+		xCheckBestMode(rpcBestCU, rpcTempCU, uiDepth DEBUG_STRING_PASS_INTO(sDebug) DEBUG_STRING_PASS_INTO(sTest));
+
 	}
 }
 
@@ -1656,9 +1807,7 @@ Void  TEncCu::xCompressCUPGR(TComDataCU*& rpcBestCU, TComDataCU*& rpcTempCU)
 // palette method
 Void TEncCu::reviseAnomalyResidue(TComDataCU*& rpcTempCU, UInt uiResidueThreshold)
 {
-	UInt uiNumValidComponent = rpcTempCU->getPic()->getNumberValidComponents();
-	UInt uiLastPLTSize[MAX_NUM_COMPONENT];
-	
+	// nothing has been done	
 }
 
 /*
@@ -1745,7 +1894,6 @@ Void getNeighbors(UInt uiX, UInt uiY, UInt uiPicWidth, Pixel* pPixel,vector<Pixe
 // get 24bit hash value
 UInt getHashValue(UInt uiX, UInt uiY, UInt uiPicWidth, Pixel* pPixel)
 {
-	UInt uiIndex;
 	vector<Pixel> vTemplate;
 	// load template data
 	getNeighbors(uiX, uiY, uiPicWidth, pPixel, vTemplate);
@@ -1912,12 +2060,7 @@ Void  TEncCu::preDefaultMethod(TComDataCU*& rpcTempCU)	// to predict every pixel
 		
 		UInt uiCBWidth = uiMaxCUWidth >> (m_pcPreYuvPGR->getComponentScaleX(cId));		// code block width for a certain component
 		UInt uiCBHeight = uiMaxCUHeight >> (m_pcPreYuvPGR->getComponentScaleY(cId));	// code block height for a certain component
-		UInt uiStrideX = uiPicWidth / uiMaxCUWidth;			// sample stride in horizontal direction as well as the number of intact CUs in a row
-		UInt uiStrideY = uiPicHeight / uiMaxCUHeight;		// sample stride in vertical direction as well as the number of intact CUs in a column
-		UInt uiStrideXplus1 = uiStrideX + 1;
-		UInt uiStrideYplus1 = uiStrideY + 1;
-		UInt uiNumberUseBiggerStrideX = uiPicWidth % uiMaxCUWidth;
-		UInt uiNumberUseBiggerStrideY = uiPicHeight % uiMaxCUHeight;
+
 		// rectangle of the code block
 		UInt uiTopX	= Clip3((UInt)0,uiPicWidth,uiCUPelX);
 		UInt uiTopY = Clip3((UInt)0, uiPicHeight, uiCUPelY);
@@ -1928,26 +2071,16 @@ Void  TEncCu::preDefaultMethod(TComDataCU*& rpcTempCU)	// to predict every pixel
 		{
 			for (UInt uiX = uiTopX; uiX < uiBottomX; uiX++)
 			{
-				UInt uiTrueX, uiTrueY;
-				UInt uiIdX, uiIdY;
-				uiIdX = uiX % uiMaxCUWidth;
-				uiIdY = uiY % uiMaxCUHeight;
-				// coordinates transform
-				if (uiIdX < uiNumberUseBiggerStrideX)
-					uiTrueX = uiX / uiMaxCUWidth + uiIdX * uiStrideXplus1;
-				else
-					uiTrueX = uiX / uiMaxCUWidth + (uiIdX - uiNumberUseBiggerStrideX) * uiStrideX + uiNumberUseBiggerStrideX*uiStrideXplus1;
-				if (uiIdY < uiNumberUseBiggerStrideY)
-					uiTrueY = uiY / uiMaxCUHeight + uiIdY*uiStrideYplus1;
-				else
-					uiTrueY = uiY / uiMaxCUHeight + (uiIdY - uiNumberUseBiggerStrideY) * uiStrideY + uiNumberUseBiggerStrideY * uiStrideYplus1;
+				UInt uiOrgX, uiOrgY;
+				uiOrgX = g_auiRsmpldToOrg[cId][0][uiX];
+				uiOrgY = g_auiRsmpldToOrg[cId][1][uiY];
 
 				// template match
-				UInt uiHashValue = getHashValue(uiTrueX, uiTrueY, uiPicWidth, m_pPixel[cId]);
-				Pixel* pCurPixel = m_pPixel[cId] + getSerialIndex(uiTrueX, uiTrueY, uiPicWidth);
+				UInt uiHashValue = getHashValue(uiOrgX, uiOrgY, uiPicWidth, m_pPixel[cId]);
+				Pixel* pCurPixel = m_pPixel[cId] + getSerialIndex(uiOrgX, uiOrgY, uiPicWidth);
 
 				assert(uiHashValue >= 0 && uiHashValue < MAX_PT_NUM);
-				PixelTemplate* pHashList = m_pPixelTemplate[cId][uiHashValue];	// hash list
+				PixelTemplate* pHashList = g_pPixelTemplate[cId][uiHashValue];	// hash list
 				PixelTemplate* pBestMatch = NULL;								// best match template
 				
 				MatchMetric mmBestMetric;
@@ -1961,7 +2094,8 @@ Void  TEncCu::preDefaultMethod(TComDataCU*& rpcTempCU)	// to predict every pixel
 						pBestMatch = pHashList;
 					}
 					pHashList = pHashList->m_pptNext;
-				}
+				}// end while
+
 				if (pBestMatch)
 				{
 					pCurPixel->m_mmMatch = mmBestMetric;
@@ -1970,19 +2104,75 @@ Void  TEncCu::preDefaultMethod(TComDataCU*& rpcTempCU)	// to predict every pixel
 					pCurPixel->m_uiPred = pRefPixel->m_uiReco;								// prediction
 					pCurPixel->m_iResi = pCurPixel->m_uiOrg - pCurPixel->m_uiPred;			// residue
 				}
+
 				// insert new template
 				PixelTemplate* pCurTemplate = new PixelTemplate(uiX, uiY);
-				pCurTemplate->m_pptNext = m_pPixelTemplate[cId][uiHashValue];
-				m_pPixelTemplate[cId][uiHashValue] = pCurTemplate;
-				m_pPixelTemplatePool.push_back(pCurTemplate);
+				pCurTemplate->m_pptNext = g_pPixelTemplate[cId][uiHashValue];
+				//cout << uiHashValue << endl;
+				g_pPixelTemplate[cId][uiHashValue] = pCurTemplate;
+				g_pPixelTemplatePool.push_back(pCurTemplate);
 
 				//
 				UInt uiIdx = uiY*uiStride + uiX;
-				pcPredYuv->getAddr(cId)[uiIdx] = m_pcPreYuvPGR->getAddr(cId)[uiIdX] = pCurPixel->m_uiPred;
+				pcPredYuv->getAddr(cId)[uiIdx] = m_pcPreYuvPGR->getAddr(cId)[uiIdx] = pCurPixel->m_uiPred;
 				pcResiYuv->getAddr(cId)[uiIdx] = m_pcResiYuvPGR->getAddr(cId)[uiIdx] = pCurPixel->m_iResi;
 			}// end for x
 		}// end for y
 	}// end for ch
+}
+
+// update pixel after compressing
+
+Void TEncCu::updatePixelAfterCompressing(TComDataCU* pCtu)
+{
+	// template matching
+	UInt uiCUPelX = pCtu->getCUPelX();			// x of upper left corner of the cu
+	UInt uiCUPelY = pCtu->getCUPelY();			// y of upper left corner of the 
+
+	UInt uiMaxCUWidth = pCtu->getSlice()->getSPS()->getMaxCUWidth();		// max cu width
+	UInt uiMaxCUHeight = pCtu->getSlice()->getSPS()->getMaxCUHeight();		// max cu height
+
+	// pic
+	TComPic *pcPic = pCtu->getPic();
+	TComPicYuv* pcPredYuv = pcPic->getPicYuvPred();
+	TComPicYuv* pcResiYuv = pcPic->getPicYuvResi();
+	TComPicYuv* pcRecoYuv = pcPic->getPicYuvRec();
+	UInt uiNumValidCopmonent = pcPic->getNumberValidComponents();
+
+
+	for (UInt ch = 0; ch < uiNumValidCopmonent; ch++)
+	{
+		ComponentID cId = ComponentID(ch);
+		// picture description
+		UInt uiStride = m_pcPreYuvPGR->getStride(cId);									// stride for a certain component 
+		UInt uiPicWidth = m_pcPreYuvPGR->getWidth(cId);									// picture width for a certain component
+		UInt uiPicHeight = m_pcPreYuvPGR->getHeight(cId);								// picture height for a certain component
+
+		UInt uiCBWidth = uiMaxCUWidth >> (m_pcPreYuvPGR->getComponentScaleX(cId));		// code block width for a certain component
+		UInt uiCBHeight = uiMaxCUHeight >> (m_pcPreYuvPGR->getComponentScaleY(cId));	// code block height for a certain component
+
+		// rectangle of the code block
+		UInt uiTopX = Clip3((UInt)0, uiPicWidth, uiCUPelX);
+		UInt uiTopY = Clip3((UInt)0, uiPicHeight, uiCUPelY);
+		UInt uiBottomX = Clip3((UInt)0, uiPicWidth, uiCUPelX + uiCBWidth);
+		UInt uiBottomY = Clip3((UInt)0, uiPicHeight, uiPicHeight + uiCBHeight);
+
+		Pel* pBuffer = pcRecoYuv->getAddr(cId);
+		for (UInt uiY = uiTopY; uiY < uiBottomY; uiY++)
+		{
+			for (UInt uiX = uiTopX; uiX < uiBottomX; uiX++)
+			{
+				UInt uiOrgX, uiOrgY;
+				uiOrgX = g_auiRsmpldToOrg[cId][0][uiX];
+				uiOrgY = g_auiRsmpldToOrg[cId][1][uiY];
+				Pixel* pPixel = m_pPixel[cId] + getSerialIndex(uiOrgX, uiOrgY, uiPicWidth);
+				
+				pPixel->m_bIsRec = true;
+				pPixel->m_uiReco = *(pBuffer + uiY*uiStride + uiX);
+
+			}
+		}
+	}
 }
 
 #endif
@@ -2098,6 +2288,7 @@ Void TEncCu::xEncodeCU( TComDataCU* pcCU, UInt uiAbsPartIdx, UInt uiDepth )
     return;
   }
 
+  // no further splitting
   if( uiDepth <= pps.getMaxCuDQPDepth() && pps.getUseDQP())
   {
     setdQPFlag(true);

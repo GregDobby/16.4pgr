@@ -281,6 +281,44 @@ public:
                                     );
 #endif
 
+#if PGR_ENABLE
+
+  Void estPGRLumaQT(TComDataCU* pcCU,
+				  TComYuv*    pcOrgYuv,
+				  TComYuv*&   rpcPredYuv,
+				  TComYuv*&	  rpcResiYuv,
+				  TComYuv*&   rpcRecoYuv);
+
+  Void estPGRChromaQT(TComDataCU* pcCU,
+	  TComYuv*    pcOrgYuv,
+	  TComYuv*&   rpcPredYuv,
+	  TComYuv*&	  rpcResiYuv,
+	  TComYuv*&   rpcRecoYuv);
+
+  Void xRecurPGRLumaCodingQT( TComYuv*    pcOrgYuv,
+						TComYuv*    pcPredYuv,
+						TComYuv*    pcResiYuv,
+						Distortion& ruiDistY,
+						Double&     dRDCost,
+						TComTU&     rTu);
+
+  Void xRecurPGRChromaCodingQT(TComYuv*    pcOrgYuv,
+	  TComYuv*    pcPredYuv,
+	  TComYuv*    pcResiYuv,
+	  Distortion& ruiDistY,
+	  TComTU&     rTu);
+
+  Void TEncSearch::xPGRCodingTUBlock( TComYuv*    pcOrgYuv,
+									  TComYuv*    pcPredYuv,
+									  TComYuv*    pcResiYuv,
+									  Distortion& ruiDist,
+									  const ComponentID compID,
+								      TComTU&     rTu
+									  );
+
+
+#endif
+
   Void xIntraBlockCopyEstimation( TComDataCU*  pcCU,
                                   TComYuv*     pcYuvOrg,
                                   Int          iPartIdx,
