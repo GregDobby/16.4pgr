@@ -1,5 +1,9 @@
-﻿Build started 2015/5/19 10:22:41.
+﻿Build started 2015/5/22 16:10:44.
+     1>Project "D:\HM-16.4+SCM-4.0\build\vc10\TAppEncoder_vc10.vcxproj" on node 2 (Clean target(s)).
+     1>C:\Program Files (x86)\MSBuild\Microsoft.Cpp\v4.0\V120\Microsoft.CppClean.targets(76,5): warning : The process cannot access the file 'd:\hm-16.4+scm-4.0\bin\vc10\win32\debug\tappencoder.exe' because it is being used by another process.
+     1>C:\Program Files (x86)\MSBuild\Microsoft.Cpp\v4.0\V120\Microsoft.CppClean.targets(76,5): warning : The process cannot access the file 'd:\hm-16.4+scm-4.0\bin\vc10\win32\debug\tappencoder.exe' because it is being used by another process.
+     1>Done Building Project "D:\HM-16.4+SCM-4.0\build\vc10\TAppEncoder_vc10.vcxproj" (Clean target(s)).
 
 Build succeeded.
 
-Time Elapsed 00:00:00.01
+Time Elapsed 00:00:00.04

@@ -40,6 +40,7 @@ typedef struct _Pixel {
 	UInt m_uiBestPX;			///< best prediction template x position
 	UInt m_uiBestPY;			///< best prediction template x position
 	MatchMetric m_mmMatch;		///< best match metric
+	UInt m_uiHashValue;			///< hash value
 } Pixel, *PPixel;
 
 typedef struct _PixelTemplate {

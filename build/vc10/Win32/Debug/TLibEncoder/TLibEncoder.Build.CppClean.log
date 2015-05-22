@@ -7,6 +7,7 @@ d:\hm-16.4+scm-4.0\build\vc10\win32\debug\tlibencoder\syntaxelementwriter.obj
 d:\hm-16.4+scm-4.0\build\vc10\win32\debug\tlibencoder\tencbincodercabac.obj
 d:\hm-16.4+scm-4.0\build\vc10\win32\debug\tlibencoder\tencbincodercabaccounter.obj
 d:\hm-16.4+scm-4.0\build\vc10\win32\debug\tlibencoder\tenccavlc.obj
+d:\hm-16.4+scm-4.0\build\vc10\win32\debug\tlibencoder\tenccu.obj
 d:\hm-16.4+scm-4.0\build\vc10\win32\debug\tlibencoder\tencentropy.obj
 d:\hm-16.4+scm-4.0\build\vc10\win32\debug\tlibencoder\tencgop.obj
 d:\hm-16.4+scm-4.0\build\vc10\win32\debug\tlibencoder\tencpic.obj
@@ -18,7 +19,6 @@ d:\hm-16.4+scm-4.0\build\vc10\win32\debug\tlibencoder\tencsearch.obj
 d:\hm-16.4+scm-4.0\build\vc10\win32\debug\tlibencoder\tencslice.obj
 d:\hm-16.4+scm-4.0\build\vc10\win32\debug\tlibencoder\tenctop.obj
 d:\hm-16.4+scm-4.0\build\vc10\win32\debug\tlibencoder\weightpredanalysis.obj
-d:\hm-16.4+scm-4.0\build\vc10\win32\debug\tlibencoder\tenccu.obj
 d:\hm-16.4+scm-4.0\build\vc10\win32\debug\tlibencoder\tlibencoder.lib
 d:\hm-16.4+scm-4.0\build\\vc10\win32\debug\tlibencoder\tlibencoder.lib
 d:\hm-16.4+scm-4.0\build\vc10\win32\debug\tlibencoder\tlibencoder.tlog\cl.command.1.tlog

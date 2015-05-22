@@ -88,9 +88,9 @@ private:
 	TComYuv**               m_ppcNoCorrYuv;
 
 #if PGR_ENABLE
-	TComYuv*				m_pcPreYuvPGR;	  ///< prediction yuv using pgr method
-	TComYuv*				m_pcRecoYuvPGR;   ///< reconstruction yuv using pgr method
-	TComYuv*				m_pcResiYuvPGR;	  ///< residue yuv using pgr method
+	//TComPicYuv*				m_pcPreYuvPGR;	  ///< prediction yuv using pgr method
+	//TComPicYuv*				m_pcRecoYuvPGR;   ///< reconstruction yuv using pgr method
+	//TComPicYuv*				m_pcResiYuvPGR;	  ///< residue yuv using pgr method
 	// ---- Template Match ----
 	Pixel*					m_pPixel[MAX_NUM_COMPONENT];						///< pixel data
 #endif

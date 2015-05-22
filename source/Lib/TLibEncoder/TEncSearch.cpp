@@ -43,6 +43,7 @@
 #include "TLibCommon/Debug.h"
 #include <math.h>
 #include <limits>
+#include <fstream>
 
 
 //! \ingroup TLibEncoder
@@ -3123,6 +3124,10 @@ Void TEncSearch::xPGRCodingTUBlock( TComYuv*    pcOrgYuv,
 
 	QpParam cQP(*pcCU, compID);
 
+	fstream fOrg, fPred, fResi;
+	fOrg.open("t_org.txt", ios::out);
+	fPred.open("t_pred.txt", ios::out);
+	fResi.open("t_resi.txt", ios::out);
 	//===== get residual signal =====
 	{
 		// get residual
@@ -3135,14 +3140,25 @@ Void TEncSearch::xPGRCodingTUBlock( TComYuv*    pcOrgYuv,
 			for (UInt uiX = 0; uiX < uiWidth; uiX++)
 			{
 				pResi[uiX] = pOrg[uiX] - pPred[uiX];
+
+				fOrg << pOrg[uiX] << "\t";
+				fPred << pPred[uiX] << "\t";
+				fResi << pResi[uiX] << "\t";
 			}
+
+			fOrg << endl;
+			fPred << endl;
+			fResi << endl;
+
 
 			pOrg += uiStride;
 			pResi += uiStride;
 			pPred += uiStride;
 		}
 	}
-
+	fOrg.close();
+	fPred.close();
+	fResi.close();
 	//===== transform and quantization =====
 	//--- init rate estimation arrays for RDOQ ---
 	if (useTransformSkip ? m_pcEncCfg->getUseRDOQTS() : m_pcEncCfg->getUseRDOQ())
@@ -3195,6 +3211,8 @@ Void TEncSearch::xPGRCodingTUBlock( TComYuv*    pcOrgYuv,
 		Pel* pReco = piReco;
 		Pel* pRecQt = piRecQt;
 		Pel* pRecIPred = piRecIPred;
+	    fstream fReco;
+		fReco.open("tranform_reco.txt",ios::out);
 #ifdef DEBUG_STRING
 		std::stringstream ss(stringstream::out);
 		const Bool bDebugPred = ((DebugOptionList::DebugString_Pred.getInt()&debugPredModeMask) && DEBUG_STRING_CHANNEL_CONDITION(compID));
@@ -3248,6 +3266,8 @@ Void TEncSearch::xPGRCodingTUBlock( TComYuv*    pcOrgYuv,
 		}
 		else
 #endif
+		
+
 		{
 			for (UInt uiY = 0; uiY < uiHeight; uiY++)
 			{
@@ -3256,13 +3276,17 @@ Void TEncSearch::xPGRCodingTUBlock( TComYuv*    pcOrgYuv,
 					pReco[uiX] = Pel(ClipBD<Int>(Int(pPred[uiX]) + Int(pResi[uiX]), bitDepth));
 					pRecQt[uiX] = pReco[uiX];
 					pRecIPred[uiX] = pReco[uiX];
+					fReco << pReco[uiX] << "\t";
 				}
 				pPred += uiStride;
 				pResi += uiStride;
 				pReco += uiStride;
 				pRecQt += uiRecQtStride;
 				pRecIPred += uiRecIPredStride;
+
+				fReco << endl;
 			}
+			fReco.close();
 		}
 	}
 
