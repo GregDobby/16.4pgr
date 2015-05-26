@@ -127,7 +127,7 @@ public:
 	Void  createPGR(UInt uiPicWidth, UInt uiPicHeight, ChromaFormat chromaFormat);
 
 	// init estimation data
-	Void  initEstPGR(TComPicYuv* pcPicYuvOrg);
+	Void  initEstPGR(TComPic* pcPic);
 
 	// update pixels after compressing
 	Void updatePixelAfterCompressing(TComDataCU* pCtu);

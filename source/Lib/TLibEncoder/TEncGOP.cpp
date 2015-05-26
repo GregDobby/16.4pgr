@@ -1252,7 +1252,7 @@ Void TEncGOP::compressGOP( Int iPOCLast, Int iNumPicRcvd, TComList<TComPic*>& rc
 	if (pcSlice->getSliceType() == I_SLICE)
 	{
 		// init estimation data before resampling
-		m_pcEncTop->getCuEncoder()->initEstPGR(pcPic->getPicYuvOrg());
+		m_pcEncTop->getCuEncoder()->initEstPGR(pcPic);
 		pcPic->getPicYuvOrg()->resample(pcSlice->getSPS()->getMaxCUWidth(), pcSlice->getSPS()->getMaxCUHeight(), false);
 	}
 		

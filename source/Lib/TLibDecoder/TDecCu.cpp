@@ -118,6 +118,20 @@ Void TDecCu::destroy()
   delete [] m_ppcYuvResi; m_ppcYuvResi = NULL;
   delete [] m_ppcYuvReco; m_ppcYuvReco = NULL;
   delete [] m_ppcCU     ; m_ppcCU      = NULL;
+
+#if PGR_ENABLE
+  ::releaseMemoryPTHashTable();
+
+  for (int ch = 0; ch < MAX_NUM_COMPONENT; ch++)
+  {
+	  ComponentID cId = ComponentID(ch);
+	  if (m_pPixel[cId])
+	  {
+		  delete[] m_pPixel[cId];
+		  m_pPixel[cId] = NULL;
+	  }
+  }
+#endif
 }
 
 // ====================================================================================================================
@@ -151,6 +165,12 @@ Void TDecCu::decodeCtu( TComDataCU* pCtu, Bool& isLastCtuOfSliceSegment )
  */
 Void TDecCu::decompressCtu( TComDataCU* pCtu )
 {
+#if PGR_ENABLE
+	if (pCtu->getPredictionMode(0) == MODE_INTRA)
+	{
+		preDefaultMethod(pCtu);
+	}
+#endif
   xDecompressCU( pCtu, 0,  0 );
 }
 
@@ -433,8 +453,14 @@ Void TDecCu::xDecompressCU( TComDataCU* pCtu, UInt uiAbsPartIdx,  UInt uiDepth )
       xReconInter( m_ppcCU[uiDepth], uiDepth );
       break;
     case MODE_INTRA:
+
+#if PGR_ENABLE
+	  xReconPGRQT(m_ppcCU[uiDepth],uiDepth);
+#else
       xReconIntraQT( m_ppcCU[uiDepth], uiDepth );
+#endif
       break;
+
 #if !SCM_T0227_INTRABC_SIG_UNIFICATION  
     case MODE_INTRABC:
       xReconIntraBC( m_ppcCU[uiDepth], uiDepth );
@@ -466,6 +492,406 @@ Void TDecCu::xDecompressCU( TComDataCU* pCtu, UInt uiAbsPartIdx,  UInt uiDepth )
 
   xCopyToPic( m_ppcCU[uiDepth], pcPic, uiAbsPartIdx, uiDepth );
 }
+
+#if PGR_ENABLE
+
+Void TDecCu::initEstPGR(TComPic* pcPic)
+{
+	TComPicYuv* pcPicYuvOrg = pcPic->getPicYuvOrg();
+	UInt uiNumValidComponent = pcPicYuvOrg->getNumberValidComponents();
+	// release hash table memory
+	::releaseMemoryPTHashTable();
+	for (int ch = 0; ch < uiNumValidComponent; ch++)
+	{
+		ComponentID cId = ComponentID(ch);
+		UInt uiPicWidth = pcPicYuvOrg->getWidth(cId);
+		UInt uiPicHeight = pcPicYuvOrg->getHeight(cId);
+
+		// init hashtable
+		for (int i = 0; i < MAX_PT_NUM; i++)
+		{
+			g_pPixelTemplate[cId][i] = NULL;
+		}
+
+		// init pixel data
+		if (m_pPixel[cId] == NULL)
+			m_pPixel[cId] = new Pixel[(uiPicWidth + 2 * EXTEG)*(uiPicHeight + 2 * EXTEG)];
+
+		UInt uiStride = pcPicYuvOrg->getStride(cId);
+		Pel* pBuffer = pcPicYuvOrg->getAddr(cId);
+		for (UInt uiY = 0; uiY < uiPicHeight + 2 * EXTEG; uiY++)
+		{
+			for (UInt uiX = 0; uiX < uiPicWidth + 2 * EXTEG; uiX++)
+			{
+				UInt index = uiY*(uiPicWidth + 2 * EXTEG) + uiX;
+				Pixel* pPixel = m_pPixel[cId] + index;
+
+				pPixel->m_bIsRec = false;
+				pPixel->m_uiX = uiX;
+				pPixel->m_uiY = uiY;
+				pPixel->m_uiOrg = 0;	
+				pPixel->m_uiPred = 0;
+				pPixel->m_uiReco = 0;
+				pPixel->m_iResi = 0;
+				pPixel->m_iDiff = 0;
+				pPixel->m_uiBestPX = EXTEG;
+				pPixel->m_uiBestPY = EXTEG;
+				pPixel->m_mmMatch.m_uiAbsDiff = 255;
+				pPixel->m_mmMatch.m_uiNumMatchPoints = 0;
+				pPixel->m_mmMatch.m_uiNumValidPoints = 0;
+			}// end x
+		}// end y
+	}// end ch
+}
+
+Void TDecCu::preDefaultMethod(TComDataCU*& rpcCu)
+{
+	// template matching
+	UInt uiCUPelX = rpcCu->getCUPelX();			// x of upper left corner of the cu
+	UInt uiCUPelY = rpcCu->getCUPelY();			// y of upper left corner of the 
+
+	UInt uiMaxCUWidth = rpcCu->getSlice()->getSPS()->getMaxCUWidth();		// max cu width
+	UInt uiMaxCUHeight = rpcCu->getSlice()->getSPS()->getMaxCUHeight();		// max cu height
+
+	// pic
+	TComPic *pcPic = rpcCu->getPic();
+	TComPicYuv* pcPredYuv = pcPic->getPicYuvPred();
+	TComPicYuv* pcResiYuv = pcPic->getPicYuvResi();
+	UInt uiNumValidCopmonent = pcPic->getNumberValidComponents();
+
+	//fstream fPred, fResi, fOrg;
+	//fPred.open("pred.txt", ios::out);
+	//fResi.open("resi.txt", ios::out);
+	//fOrg.open("org.txt", ios::out);
+
+	for (UInt ch = 0; ch < uiNumValidCopmonent; ch++)
+	{
+		ComponentID cId = ComponentID(ch);
+		// picture description
+		UInt uiStride = pcPredYuv->getStride(cId);									// stride for a certain component 
+		UInt uiPicWidth = pcPredYuv->getWidth(cId);									// picture width for a certain component
+		UInt uiPicHeight = pcPredYuv->getHeight(cId);								// picture height for a certain component
+
+		UInt uiCBWidth = uiMaxCUWidth >> (pcPredYuv->getComponentScaleX(cId));		// code block width for a certain component
+		UInt uiCBHeight = uiMaxCUHeight >> (pcPredYuv->getComponentScaleY(cId));	// code block height for a certain component
+
+		// rectangle of the code block
+		UInt uiTopX = Clip3((UInt)0, uiPicWidth, uiCUPelX);
+		UInt uiTopY = Clip3((UInt)0, uiPicHeight, uiCUPelY);
+		UInt uiBottomX = Clip3((UInt)0, uiPicWidth, uiCUPelX + uiCBWidth);
+		UInt uiBottomY = Clip3((UInt)0, uiPicHeight, uiCUPelY + uiCBHeight);
+
+		//fPred << "=====> Channel:" << cId << endl;
+		//fResi << "=====> Channel:" << cId << endl;
+		//fOrg << "=====> Channel:" << cId << endl;
+		for (UInt uiY = uiTopY; uiY < uiBottomY; uiY++)
+		{
+			for (UInt uiX = uiTopX; uiX < uiBottomX; uiX++)
+			{
+				UInt uiOrgX, uiOrgY;
+				uiOrgX = g_auiRsmpldToOrg[cId][0][uiX];
+				uiOrgY = g_auiRsmpldToOrg[cId][1][uiY];
+
+				// template match
+				UInt uiHashValue = getHashValue(uiOrgX, uiOrgY, uiPicWidth, m_pPixel[cId]);
+				Pixel* pCurPixel = m_pPixel[cId] + getSerialIndex(uiOrgX, uiOrgY, uiPicWidth);
+				pCurPixel->m_uiHashValue = uiHashValue;
+
+				assert(uiHashValue >= 0 && uiHashValue < MAX_PT_NUM);
+				PixelTemplate* pHashList = g_pPixelTemplate[cId][uiHashValue];	// hash list
+				PixelTemplate* pBestMatch = NULL;								// best match template
+
+				MatchMetric mmBestMetric;
+				while (pHashList)
+				{
+					UInt uiCX = pHashList->m_PX;
+					UInt uiCY = pHashList->m_PY;
+
+					if (!(m_pPixel[cId] + getSerialIndex(uiCX, uiCY, uiPicWidth))->m_bIsRec)
+					{
+						pHashList = pHashList->m_pptNext;
+						continue;
+					}
+
+					MatchMetric mmTmp;
+					tryMatch(uiX, uiY, uiCX, uiCY, mmTmp, uiPicWidth, m_pPixel[cId]);
+					if (mmTmp.m_uiNumMatchPoints > mmBestMetric.m_uiNumMatchPoints)
+					{
+						mmBestMetric = mmTmp;
+						pBestMatch = pHashList;
+					}
+					pHashList = pHashList->m_pptNext;
+				}// end while
+
+				if (pBestMatch)
+				{
+					pCurPixel->m_mmMatch = mmBestMetric;
+					pBestMatch->m_uiNumUsed++;
+					Pixel* pRefPixel = m_pPixel[cId] + getSerialIndex(mmBestMetric.m_uiX, mmBestMetric.m_uiY, uiPicWidth);
+					pCurPixel->m_uiPred = pRefPixel->m_uiReco;								// prediction
+					pCurPixel->m_iResi = pCurPixel->m_uiOrg - pCurPixel->m_uiPred;			// residue
+				}
+
+				// insert new template
+				PixelTemplate* pCurTemplate = new PixelTemplate(uiX, uiY);
+				pCurTemplate->m_pptNext = g_pPixelTemplate[cId][uiHashValue];
+				//cout << uiHashValue << endl;
+				g_pPixelTemplate[cId][uiHashValue] = pCurTemplate;
+				g_pPixelTemplatePool.push_back(pCurTemplate);
+
+				//
+				UInt uiIdx = uiY*uiStride + uiX;
+
+				pcPredYuv->getAddr(cId)[uiIdx] = pCurPixel->m_uiPred;
+				pcResiYuv->getAddr(cId)[uiIdx] = pCurPixel->m_iResi = pCurPixel->m_uiOrg - pCurPixel->m_uiPred;
+				assert(pCurPixel->m_uiPred >= 0 && pCurPixel->m_uiPred <= 255);
+
+				//fPred << pcPredYuv->getAddr(cId)[uiIdx] << "\t";
+				//fResi << pCurPixel->m_iResi << "\t";
+				//fOrg << pCurPixel->m_uiOrg << "\t";
+			}// end for x
+			//fPred << endl;
+			//fResi << endl;
+			//fOrg << endl;
+		}// end for y
+	}// end for ch
+	//fPred.close();
+	//fResi.close();
+	//fOrg.close();
+}
+
+Void TDecCu::xReconPGRQT(TComDataCU* pcCU, UInt uiDepth)
+{
+	const UInt numChType = pcCU->getPic()->getChromaFormat() != CHROMA_400 ? 2 : 1;
+	for (UInt chType = CHANNEL_TYPE_LUMA; chType<numChType; chType++)
+	{
+		const ChannelType chanType = ChannelType(chType);
+		const Bool NxNPUHas4Parts = ::isChroma(chanType) ? enable4ChromaPUsInIntraNxNCU(pcCU->getPic()->getChromaFormat()) : true;
+		const UInt uiInitTrDepth = (pcCU->getPartitionSize(0) != SIZE_2Nx2N && NxNPUHas4Parts ? 1 : 0);
+
+		TComTURecurse tuRecurseCU(pcCU, 0);
+		TComTURecurse tuRecurseWithPU(tuRecurseCU, false, (uiInitTrDepth == 0) ? TComTU::DONT_SPLIT : TComTU::QUAD_SPLIT);
+
+		do
+		{
+			xPGRRecQT(m_ppcYuvReco[uiDepth], m_ppcYuvReco[uiDepth], m_ppcYuvResi[uiDepth], chanType, tuRecurseWithPU);
+		} while (tuRecurseWithPU.nextSection(tuRecurseCU));
+	}
+}
+
+Void TDecCu::xPGRRecQT(TComYuv* pcRecoYuv, TComYuv* pcPredYuv, TComYuv* pcResiYuv,const ChannelType chType, TComTU &rTu)
+{
+	UInt uiTrDepth = rTu.GetTransformDepthRel();
+	TComDataCU *pcCU = rTu.getCU();
+	UInt uiAbsPartIdx = rTu.GetAbsPartIdxTU();
+	UInt uiTrMode = pcCU->getTransformIdx(uiAbsPartIdx);
+	if (uiTrMode == uiTrDepth)
+	{
+		if (isLuma(chType))
+		{
+			xPGRRecBlk(pcRecoYuv, pcPredYuv, pcResiYuv, COMPONENT_Y, rTu);
+		}
+		else
+		{
+			const UInt numValidComp = getNumberValidComponents(rTu.GetChromaFormat());
+			for (UInt compID = COMPONENT_Cb; compID<numValidComp; compID++)
+			{
+				xPGRRecBlk(pcRecoYuv, pcPredYuv, pcResiYuv, ComponentID(compID), rTu);
+			}
+		}
+	}
+	else
+	{
+		TComTURecurse tuRecurseChild(rTu, false);
+		do
+		{
+			xPGRRecQT(pcRecoYuv, pcPredYuv, pcResiYuv, chType, tuRecurseChild);
+		} while (tuRecurseChild.nextSection(rTu));
+	}
+}
+
+Void TDecCu::xPGRRecBlk(TComYuv* pcRecoYuv, TComYuv* pcPredYuv, TComYuv* pcResiYuv, const ComponentID compID, TComTU &rTu)
+{
+	if (!rTu.ProcessComponentSection(compID))
+	{
+		return;
+	}
+	const Bool       bIsLuma = isLuma(compID);
+
+
+	TComDataCU *pcCU = rTu.getCU();
+	const TComSPS &sps = *(pcCU->getSlice()->getSPS());
+	const UInt uiAbsPartIdx = rTu.GetAbsPartIdxTU();
+
+	const TComRectangle &tuRect = rTu.getRect(compID);
+	const UInt uiWidth = tuRect.width;
+	const UInt uiHeight = tuRect.height;
+	const UInt uiStride = pcRecoYuv->getStride(compID);
+	Pel* piPred = pcPredYuv->getAddr(compID, uiAbsPartIdx);
+	const ChromaFormat chFmt = rTu.GetChromaFormat();
+
+	if (uiWidth != uiHeight)
+	{
+		//------------------------------------------------
+
+		//split at current level if dividing into square sub-TUs
+
+		TComTURecurse subTURecurse(rTu, false, TComTU::VERTICAL_SPLIT, true, compID);
+
+		//recurse further
+		do
+		{
+			xPGRRecBlk(pcRecoYuv, pcPredYuv, pcResiYuv, compID, subTURecurse);
+		} while (subTURecurse.nextSection(rTu));
+
+		//------------------------------------------------
+
+		return;
+	}
+
+#ifdef DEBUG_STRING
+	std::ostream &ss(std::cout);
+#endif
+
+	assert(!pcCU->getColourTransform(0));
+
+	//===== get prediction signal =====
+	// to add
+	pcPredYuv->copyFromPicComponent(compID, pcCU->getPic()->getPicYuvPred(), pcCU->getCtuRsAddr(), uiAbsPartIdx);
+
+
+#ifdef DEBUG_STRING
+	ss << sTemp;
+#endif
+
+	//===== inverse transform =====
+	Pel*      piResi = pcResiYuv->getAddr(compID, uiAbsPartIdx);
+	TCoeff*   pcCoeff = pcCU->getCoeff(compID) + rTu.getCoefficientOffset(compID);//( uiNumCoeffInc * uiAbsPartIdx );
+
+	const QpParam cQP(*pcCU, compID);
+
+
+	DEBUG_STRING_NEW(sDebug);
+#ifdef DEBUG_STRING
+	const Int debugPredModeMask = DebugStringGetPredModeMask(MODE_INTRA);
+	std::string *psDebug = (DebugOptionList::DebugString_InvTran.getInt()&debugPredModeMask) ? &sDebug : 0;
+#endif
+
+	if (pcCU->getCbf(uiAbsPartIdx, compID, rTu.GetTransformDepthRel()) != 0)
+	{
+		m_pcTrQuant->invTransformNxN(rTu, compID, piResi, uiStride, pcCoeff, cQP DEBUG_STRING_PASS_INTO(psDebug));
+	}
+	else
+	{
+		for (UInt y = 0; y < uiHeight; y++)
+		{
+			for (UInt x = 0; x < uiWidth; x++)
+			{
+				piResi[(y * uiStride) + x] = 0;
+			}
+		}
+	}
+
+#ifdef DEBUG_STRING
+	if (psDebug)
+	{
+		ss << (*psDebug);
+	}
+#endif
+
+	//===== reconstruction =====
+	const UInt uiRecIPredStride = pcCU->getPic()->getPicYuvRec()->getStride(compID);
+
+	const Bool useCrossComponentPrediction = isChroma(compID) && (pcCU->getCrossComponentPredictionAlpha(uiAbsPartIdx, compID) != 0);
+	const Pel* pResiLuma = pcResiYuv->getAddr(COMPONENT_Y, uiAbsPartIdx);
+	const Int  strideLuma = pcResiYuv->getStride(COMPONENT_Y);
+
+	Pel* pPred = piPred;
+	Pel* pResi = piResi;
+	Pel* pReco = pcRecoYuv->getAddr(compID, uiAbsPartIdx);
+	Pel* pRecIPred = pcCU->getPic()->getPicYuvRec()->getAddr(compID, pcCU->getCtuRsAddr(), pcCU->getZorderIdxInCtu() + uiAbsPartIdx);
+
+
+#ifdef DEBUG_STRING
+	const Bool bDebugPred = ((DebugOptionList::DebugString_Pred.getInt()&debugPredModeMask) && DEBUG_STRING_CHANNEL_CONDITION(compID));
+	const Bool bDebugResi = ((DebugOptionList::DebugString_Resi.getInt()&debugPredModeMask) && DEBUG_STRING_CHANNEL_CONDITION(compID));
+	const Bool bDebugReco = ((DebugOptionList::DebugString_Reco.getInt()&debugPredModeMask) && DEBUG_STRING_CHANNEL_CONDITION(compID));
+	if (bDebugPred || bDebugResi || bDebugReco)
+	{
+		ss << "###: " << "CompID: " << compID << " pred mode (ch/fin): " << uiChPredMode << "/" << uiChFinalMode << " absPartIdx: " << rTu.GetAbsPartIdxTU() << std::endl;
+	}
+#endif
+
+	const Int clipbd = sps.getBitDepth(toChannelType(compID));
+#if O0043_BEST_EFFORT_DECODING
+	const Int bitDepthDelta = sps.getStreamBitDepth(toChannelType(compID)) - clipbd;
+#endif
+
+	if (useCrossComponentPrediction)
+	{
+		TComTrQuant::crossComponentPrediction(rTu, compID, pResiLuma, piResi, piResi, uiWidth, uiHeight, strideLuma, uiStride, uiStride, true);
+	}
+
+	for (UInt uiY = 0; uiY < uiHeight; uiY++)
+	{
+#ifdef DEBUG_STRING
+		if (bDebugPred || bDebugResi || bDebugReco)
+		{
+			ss << "###: ";
+		}
+
+		if (bDebugPred)
+		{
+			ss << " - pred: ";
+			for (UInt uiX = 0; uiX < uiWidth; uiX++)
+			{
+				ss << pPred[uiX] << ", ";
+			}
+		}
+		if (bDebugResi)
+		{
+			ss << " - resi: ";
+		}
+#endif
+
+		for (UInt uiX = 0; uiX < uiWidth; uiX++)
+		{
+#ifdef DEBUG_STRING
+			if (bDebugResi)
+			{
+				ss << pResi[uiX] << ", ";
+			}
+#endif
+#if O0043_BEST_EFFORT_DECODING
+			pReco[uiX] = ClipBD(rightShiftEvenRounding<Pel>(pPred[uiX] + pResi[uiX], bitDepthDelta), clipbd);
+#else
+			pReco[uiX] = ClipBD(pPred[uiX] + pResi[uiX], clipbd);
+#endif
+			pRecIPred[uiX] = pReco[uiX];
+		}
+#ifdef DEBUG_STRING
+		if (bDebugReco)
+		{
+			ss << " - reco: ";
+			for (UInt uiX = 0; uiX < uiWidth; uiX++)
+			{
+				ss << pReco[uiX] << ", ";
+			}
+		}
+
+		if (bDebugPred || bDebugResi || bDebugReco)
+		{
+			ss << "\n";
+		}
+#endif
+		pPred += uiStride;
+		pResi += uiStride;
+		pReco += uiStride;
+		pRecIPred += uiRecIPredStride;
+	}
+}
+
+#endif
 
 Void TDecCu::xReconInter( TComDataCU* pcCU, UInt uiDepth )
 {

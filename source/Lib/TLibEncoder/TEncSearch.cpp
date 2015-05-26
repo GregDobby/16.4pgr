@@ -3316,7 +3316,7 @@ Void TEncSearch::estPGRChromaQT( TComDataCU* pcCU,
 	//----- chroma coding -----
 	Distortion uiDist = 0;
 	// xRecurIntraChromaCodingQT(pcOrgYuv, pcPredYuv, pcResiYuv, resiLuma, uiDist, tuRecurseWithPU DEBUG_STRING_PASS_INTO(sMode));
-
+	xRecurPGRChromaCodingQT(pcOrgYuv, rpcPredYuv, rpcResiYuv, uiDist, tuRecurseWithPU);
 	if (pcCU->getSlice()->getPPS()->getUseTransformSkip())
 	{
 		m_pcRDGoOnSbacCoder->load(m_pppcRDSbacCoder[uiDepthCU][CI_CURR_BEST]);

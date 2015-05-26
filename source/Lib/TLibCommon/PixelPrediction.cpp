@@ -83,3 +83,220 @@ Void initCoordinateMap(UInt uiSourceWidth, UInt uiSourceHeight, UInt uiMaxCUWidt
 		}
 	}
 }
+
+UInt getSerialIndex(UInt uiX, UInt uiY, UInt uiPicWidth)
+{
+	return (uiY + EXTEG)*(uiPicWidth + 2 * EXTEG) + uiX + EXTEG;
+}
+
+
+// get the 21 neighbors
+Void getNeighbors(UInt uiX, UInt uiY, UInt uiPicWidth, Pixel* pPixel, vector<Pixel>& vTemplate)
+{
+	UInt uiIndex;
+	// 1
+	uiIndex = getSerialIndex(uiX - 1, uiY, uiPicWidth);
+	vTemplate.push_back(pPixel[uiIndex]);
+	// 2
+	uiIndex = getSerialIndex(uiX - 1, uiY - 1, uiPicWidth);
+	vTemplate.push_back(pPixel[uiIndex]);
+	// 3
+	uiIndex = getSerialIndex(uiX, uiY - 1, uiPicWidth);
+	vTemplate.push_back(pPixel[uiIndex]);
+	// 4
+	uiIndex = getSerialIndex(uiX + 1, uiY - 1, uiPicWidth);
+	vTemplate.push_back(pPixel[uiIndex]);
+	// 5
+	uiIndex = getSerialIndex(uiX + 2, uiY - 1, uiPicWidth);
+	vTemplate.push_back(pPixel[uiIndex]);
+	// 6
+	uiIndex = getSerialIndex(uiX - 2, uiY, uiPicWidth);
+	vTemplate.push_back(pPixel[uiIndex]);
+	// 7
+	uiIndex = getSerialIndex(uiX - 2, uiY - 1, uiPicWidth);
+	vTemplate.push_back(pPixel[uiIndex]);
+	// 8 
+	uiIndex = getSerialIndex(uiX - 2, uiY - 2, uiPicWidth);
+	vTemplate.push_back(pPixel[uiIndex]);
+	// 9
+	uiIndex = getSerialIndex(uiX - 1, uiY - 2, uiPicWidth);
+	vTemplate.push_back(pPixel[uiIndex]);
+	// 10
+	uiIndex = getSerialIndex(uiX, uiY - 2, uiPicWidth);
+	vTemplate.push_back(pPixel[uiIndex]);
+	// 11
+	uiIndex = getSerialIndex(uiX + 1, uiY - 2, uiPicWidth);
+	vTemplate.push_back(pPixel[uiIndex]);
+	// 12
+	uiIndex = getSerialIndex(uiX + 2, uiY - 2, uiPicWidth);
+	vTemplate.push_back(pPixel[uiIndex]);
+	// 13
+	uiIndex = getSerialIndex(uiX - 3, uiY, uiPicWidth);
+	vTemplate.push_back(pPixel[uiIndex]);
+	// 14
+	uiIndex = getSerialIndex(uiX - 3, uiY - 1, uiPicWidth);
+	vTemplate.push_back(pPixel[uiIndex]);
+	// 15
+	uiIndex = getSerialIndex(uiX - 3, uiY - 2, uiPicWidth);
+	vTemplate.push_back(pPixel[uiIndex]);
+	// 16
+	uiIndex = getSerialIndex(uiX - 3, uiY - 3, uiPicWidth);
+	vTemplate.push_back(pPixel[uiIndex]);
+	// 17
+	uiIndex = getSerialIndex(uiX - 2, uiY - 3, uiPicWidth);
+	vTemplate.push_back(pPixel[uiIndex]);
+	// 18
+	uiIndex = getSerialIndex(uiX - 1, uiY - 3, uiPicWidth);
+	vTemplate.push_back(pPixel[uiIndex]);
+	// 19
+	uiIndex = getSerialIndex(uiX, uiY - 3, uiPicWidth);
+	vTemplate.push_back(pPixel[uiIndex]);
+	// 20
+	uiIndex = getSerialIndex(uiX + 1, uiY - 3, uiPicWidth);
+	vTemplate.push_back(pPixel[uiIndex]);
+	// 21
+	uiIndex = getSerialIndex(uiX + 2, uiY - 3, uiPicWidth);
+	vTemplate.push_back(pPixel[uiIndex]);
+}
+
+// get 24bit hash value
+UInt getHashValue(UInt uiX, UInt uiY, UInt uiPicWidth, Pixel* pPixel)
+{
+	vector<Pixel> vTemplate;
+	// load template data
+	getNeighbors(uiX, uiY, uiPicWidth, pPixel, vTemplate);
+
+	// calculate hash value
+	UInt uiTmp;
+	UInt uiHashValue = 0;
+	UInt mask = 0xE0;		// (1110 0000)b
+	// 1
+	uiTmp = 0;
+	uiTmp += vTemplate[0].m_bIsRec ? vTemplate[0].m_uiReco : 0;
+	uiHashValue |= ((uiTmp & mask) >> 5) << 21;
+	// 2
+	uiTmp = 0;
+	uiTmp += vTemplate[1].m_bIsRec ? vTemplate[1].m_uiReco : 0;
+	uiHashValue |= ((uiTmp & mask) >> 5) << 18;
+	// 3
+	uiTmp = 0;
+	uiTmp += vTemplate[2].m_bIsRec ? vTemplate[2].m_uiReco : 0;
+	uiHashValue |= ((uiTmp & mask) >> 5) << 15;
+	// 4,5
+	uiTmp = 0;
+	uiTmp += vTemplate[3].m_bIsRec ? vTemplate[3].m_uiReco : 0;
+	uiTmp += vTemplate[4].m_bIsRec ? vTemplate[4].m_uiReco : 0;
+	uiTmp /= 2;
+	uiHashValue |= ((uiTmp & mask) >> 5) << 12;
+	// 6,7,13,14
+	uiTmp = 0;
+	uiTmp += vTemplate[5].m_bIsRec ? vTemplate[5].m_uiReco : 0;
+	uiTmp += vTemplate[6].m_bIsRec ? vTemplate[6].m_uiReco : 0;
+	uiTmp += vTemplate[12].m_bIsRec ? vTemplate[12].m_uiReco : 0;
+	uiTmp += vTemplate[13].m_bIsRec ? vTemplate[13].m_uiReco : 0;
+	uiTmp /= 4;
+	uiHashValue |= ((uiTmp & mask) >> 5) << 9;
+	// 8,15,16,17
+	uiTmp = 0;
+	uiTmp += vTemplate[7].m_bIsRec ? vTemplate[7].m_uiReco : 0;
+	uiTmp += vTemplate[14].m_bIsRec ? vTemplate[14].m_uiReco : 0;
+	uiTmp += vTemplate[15].m_bIsRec ? vTemplate[15].m_uiReco : 0;
+	uiTmp += vTemplate[16].m_bIsRec ? vTemplate[16].m_uiReco : 0;
+	uiTmp /= 4;
+	uiHashValue |= ((uiTmp & mask) >> 5) << 6;
+	// 9,10,18,19
+	uiTmp = 0;
+	uiTmp += vTemplate[8].m_bIsRec ? vTemplate[8].m_uiReco : 0;
+	uiTmp += vTemplate[9].m_bIsRec ? vTemplate[9].m_uiReco : 0;
+	uiTmp += vTemplate[17].m_bIsRec ? vTemplate[17].m_uiReco : 0;
+	uiTmp += vTemplate[18].m_bIsRec ? vTemplate[18].m_uiReco : 0;
+	uiTmp /= 4;
+	uiHashValue |= ((uiTmp & mask) >> 5) << 3;
+	// 11,12,20,21
+	uiTmp = 0;
+	uiTmp += vTemplate[10].m_bIsRec ? vTemplate[10].m_uiReco : 0;
+	uiTmp += vTemplate[11].m_bIsRec ? vTemplate[11].m_uiReco : 0;
+	uiTmp += vTemplate[19].m_bIsRec ? vTemplate[19].m_uiReco : 0;
+	uiTmp += vTemplate[20].m_bIsRec ? vTemplate[20].m_uiReco : 0;
+	uiTmp /= 4;
+	uiHashValue |= ((uiTmp & mask) >> 5);
+
+	return uiHashValue;
+}
+
+// 总误差的计算、匹配点数量的计算
+Void tryMatch(UInt uiX, UInt uiY, UInt uiCX, UInt uiCY, MatchMetric &mmMatchMetric, UInt uiPicWidth, Pixel* pPixel)
+{
+	vector<Pixel> vTemplate, vCTemplate;
+	// get the 21 neighbors
+	getNeighbors(uiX, uiY, uiPicWidth, pPixel, vTemplate);
+	getNeighbors(uiCX, uiCY, uiPicWidth, pPixel, vCTemplate);
+
+	bool bContinue = true;
+	UInt uiTotalAbsDiff = 0;
+	UInt uiNumValidPoints = 0;
+	UInt uiNumMatchPoints = 0;
+	for (int i = 0; i < 3; i++)
+	{
+		if (vTemplate[i].m_bIsRec)
+		{
+			uiNumValidPoints++;
+			if (vCTemplate[i].m_bIsRec)
+			{
+				UInt uiDiff = abs((int)(vTemplate[i].m_uiReco - vCTemplate[i].m_uiReco));
+				uiTotalAbsDiff += uiDiff;
+				if (uiDiff == 0)
+					uiNumMatchPoints++;
+			}
+			else
+			{
+				uiTotalAbsDiff += 255;
+			}
+		}
+	}
+	if (uiNumMatchPoints < 3)
+		bContinue = false;
+	for (int i = 3; i < 12 && bContinue; i++)
+	{
+		if (vTemplate[i].m_bIsRec)
+		{
+			uiNumValidPoints++;
+			if (vCTemplate[i].m_bIsRec)
+			{
+				UInt uiDiff = abs((int)(vTemplate[i].m_uiReco - vCTemplate[i].m_uiReco));
+				uiTotalAbsDiff += uiDiff;
+				if (uiDiff == 0)
+					uiNumMatchPoints++;
+			}
+			else
+			{
+				uiTotalAbsDiff += 255;
+			}
+		}
+	}
+	if (uiNumMatchPoints < 8)
+		bContinue = false;
+	for (int i = 12; i < 21 && bContinue; i++)
+	{
+		if (vTemplate[i].m_bIsRec)
+		{
+			uiNumValidPoints++;
+			if (vCTemplate[i].m_bIsRec)
+			{
+				UInt uiDiff = abs((int)(vTemplate[i].m_uiReco - vCTemplate[i].m_uiReco));
+				uiTotalAbsDiff += uiDiff;
+				if (uiDiff == 0)
+					uiNumMatchPoints++;
+			}
+			else
+			{
+				uiTotalAbsDiff += 255;
+			}
+		}
+	}
+	mmMatchMetric.m_uiX = uiCX;
+	mmMatchMetric.m_uiY = uiCY;
+	mmMatchMetric.m_uiAbsDiff = uiNumValidPoints == 0 ? 255 : (uiTotalAbsDiff / uiNumValidPoints);
+	mmMatchMetric.m_uiNumValidPoints = uiNumValidPoints;
+	mmMatchMetric.m_uiNumValidPoints = uiNumMatchPoints;
+}

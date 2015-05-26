@@ -64,7 +64,15 @@ Void initPTHashTable();
 // init g_auiOrgToRsmpld,g_auiRsmpldToOrg
 Void initCoordinateMap(UInt uiSourceWidth, UInt uiSourceHeight, UInt uiMaxCUWidth, UInt uiMaxCUHeight, ChromaFormat chromaFormatIDC);
 
+// template matching
 
+UInt getSerialIndex(UInt uiX, UInt uiY, UInt uiPicWidth);
+
+Void getNeighbors(UInt uiX, UInt uiY, UInt uiPicWidth, Pixel* pPixel, vector<Pixel>& vTemplate);
+
+UInt getHashValue(UInt uiX, UInt uiY, UInt uiPicWidth, Pixel* pPixel);
+
+Void tryMatch(UInt uiX, UInt uiY, UInt uiCX, UInt uiCY, MatchMetric &mmMatchMetric, UInt uiPicWidth, Pixel* pPixel);
 
 // ---- Revise Anomaly Residue ----
 
