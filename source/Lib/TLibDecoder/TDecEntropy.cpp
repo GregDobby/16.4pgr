@@ -489,6 +489,12 @@ Void TDecEntropy::xDecodeTransform        ( Bool& bCodeDQP, Bool& isChromaQpAdjC
   const Bool bChroma = isChromaEnabled(pcCU->getPic()->getChromaFormat());
 
   const UInt uiLog2TrafoSize = rTu.GetLog2LumaTrSize();
+
+  //cout << "-------------------" << endl;
+  //cout << "absPartIdx:" << uiAbsPartIdx << endl;
+  //cout << "log2TrafoSize:" << uiLog2TrafoSize << endl;
+  
+
 #if ENVIRONMENT_VARIABLE_DEBUG_AND_TEST
   if (bDebugRQT)
   {
@@ -509,21 +515,25 @@ Void TDecEntropy::xDecodeTransform        ( Bool& bCodeDQP, Bool& isChromaQpAdjC
   else if( uiLog2TrafoSize > pcCU->getSlice()->getSPS()->getQuadtreeTULog2MaxSize() )
   {
     uiSubdiv = 1;
+	//cout << 1 << endl;
   }
   else if( uiLog2TrafoSize == pcCU->getSlice()->getSPS()->getQuadtreeTULog2MinSize() )
   {
     uiSubdiv = 0;
+	//cout << 2 << endl;
   }
   else if( uiLog2TrafoSize == quadtreeTULog2MinSizeInCU )
   {
     uiSubdiv = 0;
+	//cout << 3 << endl;
   }
   else
   {
     assert( uiLog2TrafoSize > quadtreeTULog2MinSizeInCU );
     m_pcEntropyDecoderIf->parseTransformSubdivFlag( uiSubdiv, 5 - uiLog2TrafoSize );
+	//cout << 4 << endl;
   }
-
+  //cout << "subDiv:" << uiSubdiv << endl;
   for(Int chan=COMPONENT_Cb; chan<numValidComponent; chan++)
   {
     const ComponentID compID=ComponentID(chan);

@@ -56,10 +56,8 @@
 
 #endif
 
-
 //! \ingroup TLibEncoder
 //! \{
-
 class TEncTop;
 class TEncSbac;
 class TEncCavlc;
@@ -130,7 +128,7 @@ public:
 	Void  initEstPGR(TComPic* pcPic);
 
 	// update pixels after compressing
-	Void updatePixelAfterCompressing(TComDataCU* pCtu);
+	//	Void updatePixelAfterCompressing(TComDataCU* pCtu);
 #endif
 
 	/// destroy internal buffers
@@ -144,7 +142,6 @@ public:
 
 	Int   updateCtuDataISlice(TComDataCU* pCtu, Int width, Int height);
 
-
 protected:
 	Void  finishCU(TComDataCU*  pcCU, UInt uiAbsPartIdx, UInt uiDepth);
 #if AMP_ENC_SPEEDUP
@@ -152,8 +149,8 @@ protected:
 
 #if PGR_ENABLE
 	Void  xCompressCUPGR(TComDataCU*& rpcBestCU, TComDataCU*& rpcTempCU, UInt uiDepth); // UInt uiDepth DEBUG_STRING_FN_DECLARE(sDebug), PartSize eParentPartSize = NUMBER_OF_PART_SIZES);
-	
-	Void  preDefaultMethod(TComDataCU*& rpcTempCU);		// to predict every pixel in the given CU using default method which is  predicted in the process before
+
+	//	Void  preDefaultMethod(TComDataCU*& rpcTempCU);		// to predict every pixel in the given CU using default method which is  predicted in the process before
 
 	Void  reviseAnomalyResidue(TComDataCU*& rpcTempCU, UInt uiResidueThreshold);
 

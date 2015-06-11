@@ -71,6 +71,11 @@ private:
   PaletteInfoBuffer m_lastSliceSegmentEndPaletteState;
   PaletteInfoBuffer m_entropyCodingSyncPaletteState;
 
+#if PGR_ENABLE
+  TComPicYuv* m_pcYuvPred;
+  TComPicYuv* m_pcYuvResi;
+#endif
+
 #if SCM_T0048_PLT_PRED_IN_PPS
   Void xSetPredFromPPS(Pel lastPLT[MAX_NUM_COMPONENT][MAX_PLT_PRED_SIZE], UChar lastPLTSize[MAX_NUM_COMPONENT],
 #if !SCM_T0064_REMOVE_PLT_SHARING
@@ -84,7 +89,11 @@ public:
   virtual ~TDecSlice();
 
   Void  init              ( TDecEntropy* pcEntropyDecoder, TDecCu* pcMbDecoder );
+#if PGR_ENABLE
+  Void create(UInt uiPicWidth, UInt uiPicHeight, UInt uiMaxCuWidth, UInt uiMaxCuHeight, UInt uiMaxCuDepth, ChromaFormat chromaFormatIDC);
+#else
   Void  create            ();
+#endif
   Void  destroy           ();
 
   Void  decompressSlice   ( TComInputBitstream** ppcSubstreams,   TComPic* pcPic, TDecSbac* pcSbacDecoder );

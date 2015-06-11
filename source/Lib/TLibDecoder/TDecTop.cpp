@@ -352,8 +352,10 @@ Void TDecTop::xActivateParameterSets()
     m_cTrQuant.init     ( sps->getMaxTrSize() );
 #if PGR_ENABLE
 	m_cCuDecoder.initEstPGR(m_pcPic);
-#endif
+	m_cSliceDecoder.create(sps->getPicWidthInLumaSamples(), sps->getPicHeightInLumaSamples(), sps->getMaxCUWidth(), sps->getMaxCUHeight(), sps->getMaxTotalCUDepth(), sps->getChromaFormatIdc());
+#else
     m_cSliceDecoder.create();
+#endif
   }
   else
   {

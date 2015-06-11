@@ -1204,10 +1204,12 @@ Void TEncSearch::xIntraCodingTUBlock(       TComYuv*    pcOrgYuv,
   const UInt           uiWidth          = rect.width;
   const UInt           uiHeight         = rect.height;
   const UInt           uiStride         = pcOrgYuv ->getStride (compID);
+
         Pel           *piOrg            = pcOrgYuv ->getAddr( compID, uiAbsPartIdx );
         Pel           *piPred           = pcPredYuv->getAddr( compID, uiAbsPartIdx );
         Pel           *piResi           = pcResiYuv->getAddr( compID, uiAbsPartIdx );
         Pel           *piReco           = pcPredYuv->getAddr( compID, uiAbsPartIdx );
+
   const UInt           uiQTLayer        = sps.getQuadtreeTULog2MaxSize() - uiLog2TrSize;
         Pel           *piRecQt          = m_pcQTTempTComYuv[ uiQTLayer ].getAddr( compID, uiAbsPartIdx );
   const UInt           uiRecQtStride    = m_pcQTTempTComYuv[ uiQTLayer ].getStride(compID);
@@ -2922,7 +2924,8 @@ Void TEncSearch::xRecurPGRLumaCodingQT(TComYuv*    pcOrgYuv,
 	const UInt    uiTrDepth = rTu.GetTransformDepthRel();
 	const UInt    uiLog2TrSize = rTu.GetLog2LumaTrSize();
 	Bool    bCheckFull = (uiLog2TrSize <= pcCU->getSlice()->getSPS()->getQuadtreeTULog2MaxSize());
-	Bool    bCheckSplit = (uiLog2TrSize  >  pcCU->getQuadtreeTULog2MinSizeInCU(uiAbsPartIdx));
+	Bool    bCheckSplit = (uiLog2TrSize > 5);//pcCU->getQuadtreeTULog2MinSizeInCU(uiAbsPartIdx));
+
 
 #if SCM_T0121_INFER_TU_SPLIT_ENCODER
 	if (m_pcEncCfg->getTransquantBypassInferTUSplit() && pcCU->isLosslessCoded(uiAbsPartIdx) && bCheckFull)
@@ -3042,22 +3045,22 @@ Void TEncSearch::xRecurPGRLumaCodingQT(TComYuv*    pcOrgYuv,
 		pcCU->setTransformSkipSubParts(bestModeId[COMPONENT_Y], COMPONENT_Y, uiAbsPartIdx, totalAdjustedDepthChan);
 
 		//--- set reconstruction for next intra prediction blocks ---
-		const UInt  uiQTLayer = pcCU->getSlice()->getSPS()->getQuadtreeTULog2MaxSize() - uiLog2TrSize;
-		const UInt  uiZOrder = pcCU->getZorderIdxInCtu() + uiAbsPartIdx;
-		const UInt  uiWidth = tuRect.width;
-		const UInt  uiHeight = tuRect.height;
-		Pel*  piSrc = m_pcQTTempTComYuv[uiQTLayer].getAddr(COMPONENT_Y, uiAbsPartIdx);
-		UInt  uiSrcStride = m_pcQTTempTComYuv[uiQTLayer].getStride(COMPONENT_Y);
-		Pel*  piDes = pcCU->getPic()->getPicYuvRec()->getAddr(COMPONENT_Y, pcCU->getCtuRsAddr(), uiZOrder);
-		UInt  uiDesStride = pcCU->getPic()->getPicYuvRec()->getStride(COMPONENT_Y);
+		//const UInt  uiQTLayer = pcCU->getSlice()->getSPS()->getQuadtreeTULog2MaxSize() - uiLog2TrSize;
+		//const UInt  uiZOrder = pcCU->getZorderIdxInCtu() + uiAbsPartIdx;
+		//const UInt  uiWidth = tuRect.width;
+		//const UInt  uiHeight = tuRect.height;
+		//Pel*  piSrc = m_pcQTTempTComYuv[uiQTLayer].getAddr(COMPONENT_Y, uiAbsPartIdx);
+		//UInt  uiSrcStride = m_pcQTTempTComYuv[uiQTLayer].getStride(COMPONENT_Y);
+		//Pel*  piDes = pcCU->getPic()->getPicYuvRec()->getAddr(COMPONENT_Y, pcCU->getCtuRsAddr(), uiZOrder);
+		//UInt  uiDesStride = pcCU->getPic()->getPicYuvRec()->getStride(COMPONENT_Y);
 
-		for (UInt uiY = 0; uiY < uiHeight; uiY++, piSrc += uiSrcStride, piDes += uiDesStride)
-		{
-			for (UInt uiX = 0; uiX < uiWidth; uiX++)
-			{
-				piDes[uiX] = piSrc[uiX];
-			}
-		}
+		//for (UInt uiY = 0; uiY < uiHeight; uiY++, piSrc += uiSrcStride, piDes += uiDesStride)
+		//{
+		//	for (UInt uiX = 0; uiX < uiWidth; uiX++)
+		//	{
+		//		piDes[uiX] = piSrc[uiX];
+		//	}
+		//}
 	}
 
 	ruiDistY += uiSingleDistLuma;
@@ -3102,18 +3105,13 @@ Void TEncSearch::xPGRCodingTUBlock( TComYuv*    pcOrgYuv,
 	const UInt           uiZOrder = pcCU->getZorderIdxInCtu() + uiAbsPartIdx;
 	Pel					 *piRecIPred = pcCU->getPic()->getPicYuvRec()->getAddr(compID, pcCU->getCtuRsAddr(), uiZOrder);
 	UInt				 uiRecIPredStride = pcCU->getPic()->getPicYuvRec()->getStride(compID);
+
 	TCoeff				 *pcCoeff = m_ppcQTTempCoeff[compID][uiQTLayer] + rTu.getCoefficientOffset(compID);
 	Bool				 useTransformSkip = pcCU->getTransformSkip(uiAbsPartIdx, compID);
 
 #if ADAPTIVE_QP_SELECTION
 	TCoeff				 *pcArlCoeff = m_ppcQTTempArlCoeff[compID][uiQTLayer] + rTu.getCoefficientOffset(compID);
 #endif
-
-	const UInt           uiChPredMode = pcCU->getIntraDir(chType, uiAbsPartIdx);
-	const UInt           partsPerMinCU = 1 << (2 * (sps.getMaxTotalCUDepth() - sps.getLog2DiffMaxMinCodingBlockSize()));
-	const UInt           uiChCodedMode = (uiChPredMode == DM_CHROMA_IDX && !bIsLuma) ? pcCU->getIntraDir(CHANNEL_TYPE_LUMA, getChromasCorrespondingPULumaIdx(uiAbsPartIdx, chFmt, partsPerMinCU)) : uiChPredMode;
-	const UInt           uiChFinalMode = ((chFmt == CHROMA_422) && !bIsLuma) ? g_chroma422IntraAngleMappingTable[uiChCodedMode] : uiChCodedMode;
-
 	const Int            blkX = g_auiRasterToPelX[g_auiZscanToRaster[uiAbsPartIdx]];
 	const Int            blkY = g_auiRasterToPelY[g_auiZscanToRaster[uiAbsPartIdx]];
 	const Int            bufferOffset = blkX + (blkY * MAX_CU_SIZE);
@@ -3124,10 +3122,6 @@ Void TEncSearch::xPGRCodingTUBlock( TComYuv*    pcOrgYuv,
 
 	QpParam cQP(*pcCU, compID);
 
-	fstream fOrg, fPred, fResi;
-	fOrg.open("t_org.txt", ios::out);
-	fPred.open("t_pred.txt", ios::out);
-	fResi.open("t_resi.txt", ios::out);
 	//===== get residual signal =====
 	{
 		// get residual
@@ -3140,25 +3134,14 @@ Void TEncSearch::xPGRCodingTUBlock( TComYuv*    pcOrgYuv,
 			for (UInt uiX = 0; uiX < uiWidth; uiX++)
 			{
 				pResi[uiX] = pOrg[uiX] - pPred[uiX];
-
-				fOrg << pOrg[uiX] << "\t";
-				fPred << pPred[uiX] << "\t";
-				fResi << pResi[uiX] << "\t";
 			}
-
-			fOrg << endl;
-			fPred << endl;
-			fResi << endl;
-
 
 			pOrg += uiStride;
 			pResi += uiStride;
 			pPred += uiStride;
 		}
 	}
-	fOrg.close();
-	fPred.close();
-	fResi.close();
+
 	//===== transform and quantization =====
 	//--- init rate estimation arrays for RDOQ ---
 	if (useTransformSkip ? m_pcEncCfg->getUseRDOQTS() : m_pcEncCfg->getUseRDOQ())
@@ -3211,8 +3194,9 @@ Void TEncSearch::xPGRCodingTUBlock( TComYuv*    pcOrgYuv,
 		Pel* pReco = piReco;
 		Pel* pRecQt = piRecQt;
 		Pel* pRecIPred = piRecIPred;
-	    fstream fReco;
-		fReco.open("tranform_reco.txt",ios::out);
+
+	    //fstream fReco;
+		//fReco.open("t_reco.txt",ios::out);
 #ifdef DEBUG_STRING
 		std::stringstream ss(stringstream::out);
 		const Bool bDebugPred = ((DebugOptionList::DebugString_Pred.getInt()&debugPredModeMask) && DEBUG_STRING_CHANNEL_CONDITION(compID));
@@ -3276,7 +3260,7 @@ Void TEncSearch::xPGRCodingTUBlock( TComYuv*    pcOrgYuv,
 					pReco[uiX] = Pel(ClipBD<Int>(Int(pPred[uiX]) + Int(pResi[uiX]), bitDepth));
 					pRecQt[uiX] = pReco[uiX];
 					pRecIPred[uiX] = pReco[uiX];
-					fReco << pReco[uiX] << "\t";
+					//fReco << pReco[uiX] << "\t";
 				}
 				pPred += uiStride;
 				pResi += uiStride;
@@ -3284,9 +3268,9 @@ Void TEncSearch::xPGRCodingTUBlock( TComYuv*    pcOrgYuv,
 				pRecQt += uiRecQtStride;
 				pRecIPred += uiRecIPredStride;
 
-				fReco << endl;
+				//fReco << endl;
 			}
-			fReco.close();
+			//fReco.close();
 		}
 	}
 
