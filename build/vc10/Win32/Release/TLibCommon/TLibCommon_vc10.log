@@ -1,0 +1,69 @@
+﻿Build started 2015/5/18 15:47:35.
+     1>Project "D:\HM-16.4+SCM-4.0\build\vc10\TLibCommon_vc10.vcxproj" on node 3 (Build target(s)).
+     1>ClCompile:
+         C:\Program Files (x86)\Microsoft Visual Studio 12.0\VC\bin\CL.exe /c /I"D:\HM-16.4+SCM-4.0\build\\..\source\Lib\\" /I"D:\HM-16.4+SCM-4.0\build\\..\compat\msvc" /Zi /nologo /W3 /WX- /O2 /Ob2 /Ot /Oy- /GL /D WIN32 /D _LIB /D _CRT_SECURE_NO_WARNINGS /D _MBCS /GF /Gm- /EHsc /MT /GS /Gy /fp:precise /Zc:wchar_t /Zc:forScope /Fo"D:\HM-16.4+SCM-4.0\build\\vc10\Win32\Release\TLibCommon\\" /Fd"D:\HM-16.4+SCM-4.0\build\\vc10\Win32\Release\TLibCommon\vc120.pdb" /Gd /TC /analyze- /errorReport:prompt ..\..\source\Lib\libmd5\libmd5.c
+         libmd5.c
+         C:\Program Files (x86)\Microsoft Visual Studio 12.0\VC\bin\CL.exe /c /I"D:\HM-16.4+SCM-4.0\build\\..\source\Lib\\" /I"D:\HM-16.4+SCM-4.0\build\\..\compat\msvc" /Zi /nologo /W3 /WX- /O2 /Ob2 /Ot /Oy- /GL /D WIN32 /D _LIB /D _CRT_SECURE_NO_WARNINGS /D _MBCS /GF /Gm- /EHsc /MT /GS /Gy /fp:precise /Zc:wchar_t /Zc:forScope /Fo"D:\HM-16.4+SCM-4.0\build\\vc10\Win32\Release\TLibCommon\\" /Fd"D:\HM-16.4+SCM-4.0\build\\vc10\Win32\Release\TLibCommon\vc120.pdb" /Gd /TP /analyze- /errorReport:prompt ..\..\source\Lib\TLibCommon\ContextModel.cpp ..\..\source\Lib\TLibCommon\ContextModel3DBuffer.cpp ..\..\source\Lib\TLibCommon\Debug.cpp ..\..\source\Lib\TLibCommon\SEI.cpp ..\..\source\Lib\TLibCommon\TComBitStream.cpp ..\..\source\Lib\TLibCommon\TComCABACTables.cpp ..\..\source\Lib\TLibCommon\TComChromaFormat.cpp ..\..\source\Lib\TLibCommon\TComDataCU.cpp ..\..\source\Lib\TLibCommon\TComHash.cpp ..\..\source\Lib\TLibCommon\TComInterpolationFilter.cpp ..\..\source\Lib\TLibCommon\TComLoopFilter.cpp ..\..\source\Lib\TLibCommon\TComMotionInfo.cpp ..\..\source\Lib\TLibCommon\TComPattern.cpp ..\..\source\Lib\TLibCommon\TComPic.cpp ..\..\source\Lib\TLibCommon\TComPicSym.cpp ..\..\source\Lib\TLibCommon\TComPicYuv.cpp ..\..\source\Lib\TLibCommon\TComPicYuvMD5.cpp ..\..\source\Lib\TLibCommon\TComPrediction.cpp ..\..\source\Lib\TLibCommon\TComRdCost.cpp ..\..\source\Lib\TLibCommon\TComRdCostWeightPrediction.cpp ..\..\source\Lib\TLibCommon\TComRom.cpp ..\..\source\Lib\TLibCommon\TComSampleAdaptiveOffset.cpp ..\..\source\Lib\TLibCommon\TComSlice.cpp ..\..\source\Lib\TLibCommon\TComTrQuant.cpp ..\..\source\Lib\TLibCommon\TComTU.cpp ..\..\source\Lib\TLibCommon\TComWeightPrediction.cpp ..\..\source\Lib\TLibCommon\TComYuv.cpp
+         ContextModel.cpp
+         ContextModel3DBuffer.cpp
+         Debug.cpp
+         SEI.cpp
+         TComBitStream.cpp
+         TComCABACTables.cpp
+         TComChromaFormat.cpp
+         TComDataCU.cpp
+         TComHash.cpp
+         TComInterpolationFilter.cpp
+         TComLoopFilter.cpp
+         TComMotionInfo.cpp
+         TComPattern.cpp
+         TComPic.cpp
+         TComPicSym.cpp
+         TComPicYuv.cpp
+         TComPicYuvMD5.cpp
+         TComPrediction.cpp
+         TComRdCost.cpp
+         TComRdCostWeightPrediction.cpp
+         Compiling...
+         TComRom.cpp
+         TComSampleAdaptiveOffset.cpp
+         TComSlice.cpp
+         TComTrQuant.cpp
+         TComTU.cpp
+         TComWeightPrediction.cpp
+         TComYuv.cpp
+       Lib:
+         C:\Program Files (x86)\Microsoft Visual Studio 12.0\VC\bin\Lib.exe /OUT:"D:\HM-16.4+SCM-4.0\build\\vc10\Win32\Release\TLibCommon\TLibCommon.lib" /NOLOGO /LTCG "D:\HM-16.4+SCM-4.0\build\\vc10\Win32\Release\TLibCommon\libmd5.obj"
+         "D:\HM-16.4+SCM-4.0\build\\vc10\Win32\Release\TLibCommon\ContextModel.obj"
+         "D:\HM-16.4+SCM-4.0\build\\vc10\Win32\Release\TLibCommon\ContextModel3DBuffer.obj"
+         "D:\HM-16.4+SCM-4.0\build\\vc10\Win32\Release\TLibCommon\Debug.obj"
+         "D:\HM-16.4+SCM-4.0\build\\vc10\Win32\Release\TLibCommon\SEI.obj"
+         "D:\HM-16.4+SCM-4.0\build\\vc10\Win32\Release\TLibCommon\TComBitStream.obj"
+         "D:\HM-16.4+SCM-4.0\build\\vc10\Win32\Release\TLibCommon\TComCABACTables.obj"
+         "D:\HM-16.4+SCM-4.0\build\\vc10\Win32\Release\TLibCommon\TComChromaFormat.obj"
+         "D:\HM-16.4+SCM-4.0\build\\vc10\Win32\Release\TLibCommon\TComDataCU.obj"
+         "D:\HM-16.4+SCM-4.0\build\\vc10\Win32\Release\TLibCommon\TComHash.obj"
+         "D:\HM-16.4+SCM-4.0\build\\vc10\Win32\Release\TLibCommon\TComInterpolationFilter.obj"
+         "D:\HM-16.4+SCM-4.0\build\\vc10\Win32\Release\TLibCommon\TComLoopFilter.obj"
+         "D:\HM-16.4+SCM-4.0\build\\vc10\Win32\Release\TLibCommon\TComMotionInfo.obj"
+         "D:\HM-16.4+SCM-4.0\build\\vc10\Win32\Release\TLibCommon\TComPattern.obj"
+         "D:\HM-16.4+SCM-4.0\build\\vc10\Win32\Release\TLibCommon\TComPic.obj"
+         "D:\HM-16.4+SCM-4.0\build\\vc10\Win32\Release\TLibCommon\TComPicSym.obj"
+         "D:\HM-16.4+SCM-4.0\build\\vc10\Win32\Release\TLibCommon\TComPicYuv.obj"
+         "D:\HM-16.4+SCM-4.0\build\\vc10\Win32\Release\TLibCommon\TComPicYuvMD5.obj"
+         "D:\HM-16.4+SCM-4.0\build\\vc10\Win32\Release\TLibCommon\TComPrediction.obj"
+         "D:\HM-16.4+SCM-4.0\build\\vc10\Win32\Release\TLibCommon\TComRdCost.obj"
+         "D:\HM-16.4+SCM-4.0\build\\vc10\Win32\Release\TLibCommon\TComRdCostWeightPrediction.obj"
+         "D:\HM-16.4+SCM-4.0\build\\vc10\Win32\Release\TLibCommon\TComRom.obj"
+         "D:\HM-16.4+SCM-4.0\build\\vc10\Win32\Release\TLibCommon\TComSampleAdaptiveOffset.obj"
+         "D:\HM-16.4+SCM-4.0\build\\vc10\Win32\Release\TLibCommon\TComSlice.obj"
+         "D:\HM-16.4+SCM-4.0\build\\vc10\Win32\Release\TLibCommon\TComTrQuant.obj"
+         "D:\HM-16.4+SCM-4.0\build\\vc10\Win32\Release\TLibCommon\TComTU.obj"
+         "D:\HM-16.4+SCM-4.0\build\\vc10\Win32\Release\TLibCommon\TComWeightPrediction.obj"
+         "D:\HM-16.4+SCM-4.0\build\\vc10\Win32\Release\TLibCommon\TComYuv.obj"
+         TLibCommon_vc10.vcxproj -> D:\HM-16.4+SCM-4.0\build\\vc10\Win32\Release\TLibCommon\TLibCommon.lib
+     1>Done Building Project "D:\HM-16.4+SCM-4.0\build\vc10\TLibCommon_vc10.vcxproj" (Build target(s)).
+
+Build succeeded.
+
+Time Elapsed 00:00:13.35

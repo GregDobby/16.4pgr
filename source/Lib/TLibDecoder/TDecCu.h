@@ -68,7 +68,9 @@ private:
 
   Bool                m_bDecodeDQP;
   Bool                m_IsChromaQpAdjCoded;
-
+#if PGR_ENABLE
+  Pixel*			  m_pPixel[MAX_NUM_COMPONENT];
+#endif
 public:
   TDecCu();
   virtual ~TDecCu();
@@ -89,6 +91,11 @@ public:
 
   /// reconstruct Ctu information
   Void  decompressCtu           ( TComDataCU* pCtu );
+#if PGR_ENABLE
+
+  Void initEstPGR				(TComPic* pcPic);
+
+#endif
 
 protected:
 
@@ -115,6 +122,18 @@ protected:
   Void xIntraRecQT              ( TComYuv* pcRecoYuv, TComYuv* pcPredYuv, TComYuv* pcResiYuv, const ChannelType chType, TComTU &rTu );
   Void xIntraRecBlk             ( TComYuv* pcRecoYuv, TComYuv* pcPredYuv, TComYuv* pcResiYuv, TComTU &rTu );
   Void xIntraRecQT              ( TComYuv* pcRecoYuv, TComYuv* pcPredYuv, TComYuv* pcResiYuv, TComTU &rTu );
+
+#if PGR_ENABLE
+
+  //Void xDecompressCUPGR			(TComDataCU* pCtu, UInt uiAbsPartIdx, UInt uiDepth);
+  Void xReconPGRQT				(TComDataCU* pcCU, UInt uiDepth);
+  Void xPGRRecQT				(TComYuv* pcRecoYuv, TComYuv* pcPredYuv, TComYuv* pcResiYuv, const ChannelType component, TComTU &rTu);
+  Void xPGRRecBlk				(TComYuv* pcRecoYuv, TComYuv* pcPredYuv, TComYuv* pcResiYuv, const ComponentID component, TComTU &rTu);
+
+  Void preDefaultMethod         (TComDataCU*& rpcTempCU);
+
+
+#endif
 
   Void xReconPCM                ( TComDataCU* pcCU, UInt uiDepth );
 

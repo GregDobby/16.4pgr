@@ -51,19 +51,46 @@ TDecSlice::TDecSlice()
 TDecSlice::~TDecSlice()
 {
 }
-
+#if PGR_ENABLE
+Void TDecSlice::create(UInt uiPicWidth, UInt uiPicHeight, UInt uiMaxCuWidth, UInt uiMaxCuHeight, UInt uiMaxCuDepth, ChromaFormat chromaFormatIDC)
+{
+	m_pcYuvPred = new TComPicYuv; m_pcYuvPred->create(uiPicWidth, uiPicHeight, chromaFormatIDC, uiMaxCuWidth, uiMaxCuHeight, uiMaxCuDepth, true);
+	m_pcYuvResi = new TComPicYuv; m_pcYuvResi->create(uiPicWidth, uiPicHeight, chromaFormatIDC, uiMaxCuWidth, uiMaxCuHeight, uiMaxCuDepth, true);
+	g_pcYuvPred = new TComPicYuv; g_pcYuvPred->create(uiPicWidth, uiPicHeight, chromaFormatIDC, uiMaxCuWidth, uiMaxCuHeight, uiMaxCuDepth, true);
+	g_pcYuvResi = new TComPicYuv; g_pcYuvResi->create(uiPicWidth, uiPicHeight, chromaFormatIDC, uiMaxCuWidth, uiMaxCuHeight, uiMaxCuDepth, true); 
+}
+#else
 Void TDecSlice::create()
 {
 }
+#endif
 
 Void TDecSlice::destroy()
 {
+#if PGR_ENABLE
+	if (m_pcYuvPred)
+	{
+		m_pcYuvPred->destroy();
+		delete m_pcYuvPred;
+		m_pcYuvPred = NULL;
+	}
+	if (m_pcYuvResi)
+	{
+		m_pcYuvResi->destroy();
+		delete m_pcYuvResi;
+		m_pcYuvResi = NULL;
+	}
+
+#endif
 }
 
 Void TDecSlice::init(TDecEntropy* pcEntropyDecoder, TDecCu* pcCuDecoder)
 {
   m_pcEntropyDecoder  = pcEntropyDecoder;
   m_pcCuDecoder       = pcCuDecoder;
+#if PGR_ENABLE
+  m_pcYuvPred = m_pcYuvResi = NULL;
+#endif
 }
 
 #if SCM_T0048_PLT_PRED_IN_PPS
@@ -105,8 +132,14 @@ Void TDecSlice::decompressSlice(TComInputBitstream** ppcSubstreams, TComPic* pcP
   m_pcEntropyDecoder->resetEntropy      (pcSlice);
 
   // decoder doesn't need prediction & residual frame buffer
+#if PGR_ENABLE
+
+  pcPic->setPicYuvPred(m_pcYuvPred);
+  pcPic->setPicYuvResi(m_pcYuvResi);
+#else
   pcPic->setPicYuvPred( 0 );
   pcPic->setPicYuvResi( 0 );
+#endif
 
 #if ENC_DEC_TRACE
   g_bJustDoIt = g_bEncDecTraceEnable;

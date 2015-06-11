@@ -287,7 +287,10 @@ Void TEncEntropy::xEncodeTransform( Bool& bCodeDQP, Bool& codeChromaQpAdj, TComT
 #endif
   const UInt uiSubdiv = pcCU->getTransformIdx( uiAbsPartIdx ) > uiTrIdx;// + pcCU->getDepth( uiAbsPartIdx ) > uiDepth;
   const UInt uiLog2TrafoSize = rTu.GetLog2LumaTrSize();
-
+  //cout << "-------------------" << endl;
+  //cout << "absPartIdx:" << uiAbsPartIdx << endl;
+  //cout << "log2TrafoSize:" << uiLog2TrafoSize << endl;
+  //cout << "subDiv:" << uiSubdiv << endl;
 
   UInt cbf[MAX_NUM_COMPONENT] = {0,0,0};
   Bool bHaveACodedBlock       = false;
@@ -327,19 +330,23 @@ Void TEncEntropy::xEncodeTransform( Bool& bCodeDQP, Bool& codeChromaQpAdj, TComT
   else if( uiLog2TrafoSize > pcCU->getSlice()->getSPS()->getQuadtreeTULog2MaxSize() )
   {
     assert( uiSubdiv );
+	//cout << 1 << endl;
   }
   else if( uiLog2TrafoSize == pcCU->getSlice()->getSPS()->getQuadtreeTULog2MinSize() )
   {
     assert( !uiSubdiv );
+	//cout << 2 << endl;
   }
   else if( uiLog2TrafoSize == pcCU->getQuadtreeTULog2MinSizeInCU(uiAbsPartIdx) )
   {
     assert( !uiSubdiv );
+	//cout << 3 << endl;
   }
   else
   {
     assert( uiLog2TrafoSize > pcCU->getQuadtreeTULog2MinSizeInCU(uiAbsPartIdx) );
     m_pcEntropyCoderIf->codeTransformSubdivFlag( uiSubdiv, 5 - uiLog2TrafoSize );
+	//cout << 4 << endl;
   }
 
   const UInt uiTrDepthCurr = uiDepth - pcCU->getDepth( uiAbsPartIdx );

@@ -49,6 +49,12 @@
 #include "TComRdCost.h"
 #include "TComPattern.h"
 
+#if PGR_ENABLE
+
+#include "TLibCommon/PixelPrediction.h"
+
+#endif
+
 //! \ingroup TLibCommon
 //! \{
 
@@ -112,6 +118,10 @@ private:
 
   Pel*           m_pcIPCMSample[MAX_NUM_COMPONENT];    ///< PCM sample buffer (0->Y, 1->Cb, 2->Cr)
   Bool*          m_ColourTransform; 
+
+#if PGR_ENABLE
+  Bool*						m_pbPGRFlag;										///< pgr flag
+#endif
 
   // -------------------------------------------------------------------------------------------------------------------
   // neighbour access variables
@@ -247,6 +257,13 @@ public:
   // -------------------------------------------------------------------------------------------------------------------
   // member functions for CU data
   // -------------------------------------------------------------------------------------------------------------------
+
+#if PGR_ENABLE
+  Bool* getPGRFlag					   ()						{ return m_pbPGRFlag; }
+  Bool  getPGRFlag                     (UInt idx)				{ return m_pbPGRFlag[idx]; }
+  Void  setPGRFlag					   (UInt idx, Bool b)       { m_pbPGRFlag[idx] = b; }
+  Void  setPGRFlagSubParts(Bool b, UInt absPartIdx, UInt depth);
+#endif
 
 #if SCM_T0227_INTRABC_SIG_UNIFICATION
   Void          getStartPosition( UInt uiPartIdx, Int& xStartInCU, Int& yStartInCU );

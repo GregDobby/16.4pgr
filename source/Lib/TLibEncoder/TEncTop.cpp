@@ -96,6 +96,13 @@ Void TEncTop::create ()
   m_cCuEncoder.         create( m_maxTotalCUDepth, m_maxCUWidth, m_maxCUHeight, m_chromaFormatIDC
                          ,m_uiPLTMaxSize, m_uiPLTMaxPredSize
      );
+
+#if PGR_ENABLE
+  initCoordinateMap(getSourceWidth(), getSourceHeight(), m_maxCUWidth, m_maxCUHeight, m_chromaFormatIDC);
+  m_cCuEncoder.			createPGR(getSourceWidth(), getSourceHeight(), m_chromaFormatIDC);
+#endif
+
+
   if (m_bUseSAO)
   {
     m_cEncSAO.create( getSourceWidth(), getSourceHeight(), m_chromaFormatIDC, m_maxCUWidth, m_maxCUHeight, m_maxTotalCUDepth, m_saoOffsetBitShift[CHANNEL_TYPE_LUMA], m_saoOffsetBitShift[CHANNEL_TYPE_CHROMA] );
@@ -180,6 +187,10 @@ Void TEncTop::destroy ()
 
   // destroy ROM
   destroyROM();
+
+#if PGR_ENABLE
+
+#endif
 
   return;
 }
@@ -329,6 +340,7 @@ Void TEncTop::encode( Bool flush, TComPicYuv* pcPicYuvOrg, TComPicYuv* pcPicYuvT
     pcPicYuvOrg->copyToPic( pcPicCurr->getPicYuvOrg() );
     pcPicYuvTrueOrg->copyToPic( pcPicCurr->getPicYuvTrueOrg() );
 
+
     // compute image characteristics
     if ( getUseAdaptiveQP() )
     {
@@ -348,6 +360,7 @@ Void TEncTop::encode( Bool flush, TComPicYuv* pcPicYuvOrg, TComPicYuv* pcPicYuvT
   }
 
   // compress GOP
+
   m_cGOPEncoder.compressGOP(m_iPOCLast, m_iNumPicRcvd, m_cListPic, rcListPicYuvRecOut, accessUnitsOut, false, false, snrCSC, m_printFrameMSE);
 
   if ( m_RCEnableRateControl )

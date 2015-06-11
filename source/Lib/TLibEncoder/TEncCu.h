@@ -49,9 +49,15 @@
 #include "TEncEntropy.h"
 #include "TEncSearch.h"
 #include "TEncRateCtrl.h"
+
+#if PGR_ENABLE
+
+#include "TLibCommon/PixelPrediction.h"
+
+#endif
+
 //! \ingroup TLibEncoder
 //! \{
-
 class TEncTop;
 class TEncSbac;
 class TEncCavlc;
@@ -78,6 +84,14 @@ private:
 	TComYuv**               m_ppcRecoYuvTemp; ///< Temporary Reconstruction Yuv for each depth
 	TComYuv**               m_ppcOrigYuv;     ///< Original Yuv for each depth
 	TComYuv**               m_ppcNoCorrYuv;
+
+#if PGR_ENABLE
+	//TComPicYuv*				m_pcPreYuvPGR;	  ///< prediction yuv using pgr method
+	//TComPicYuv*				m_pcRecoYuvPGR;   ///< reconstruction yuv using pgr method
+	//TComPicYuv*				m_pcResiYuvPGR;	  ///< residue yuv using pgr method
+	// ---- Template Match ----
+	Pixel*					m_pPixel[MAX_NUM_COMPONENT];						///< pixel data
+#endif
 
 	//  Data : encoder control
 	Bool                    m_bEncodeDQP;
@@ -106,6 +120,16 @@ public:
 	Void  create(UChar uhTotalDepth, UInt iMaxWidth, UInt iMaxHeight, ChromaFormat chromaFormat
 		, UInt uiPLTMaxSize, UInt uiPLTMaxPredSize
 		);
+#if PGR_ENABLE
+	// create pgr buffers
+	Void  createPGR(UInt uiPicWidth, UInt uiPicHeight, ChromaFormat chromaFormat);
+
+	// init estimation data
+	Void  initEstPGR(TComPic* pcPic);
+
+	// update pixels after compressing
+	//	Void updatePixelAfterCompressing(TComDataCU* pCtu);
+#endif
 
 	/// destroy internal buffers
 	Void  destroy();
@@ -118,16 +142,15 @@ public:
 
 	Int   updateCtuDataISlice(TComDataCU* pCtu, Int width, Int height);
 
-
 protected:
 	Void  finishCU(TComDataCU*  pcCU, UInt uiAbsPartIdx, UInt uiDepth);
 #if AMP_ENC_SPEEDUP
 	Void  xCompressCU(TComDataCU*& rpcBestCU, TComDataCU*& rpcTempCU, UInt uiDepth DEBUG_STRING_FN_DECLARE(sDebug), PartSize eParentPartSize = NUMBER_OF_PART_SIZES);
 
 #if PGR_ENABLE
-	Void  xCompressCUPGR(TComDataCU*& rpcBestCU, TComDataCU*& rpcTempCU); // UInt uiDepth DEBUG_STRING_FN_DECLARE(sDebug), PartSize eParentPartSize = NUMBER_OF_PART_SIZES);
-	
-	Void  preDefaultMethod(TComDataCU*& rpcTempCU);		// to predict every pixel in the given CU using default method which is  predicted in the process before
+	Void  xCompressCUPGR(TComDataCU*& rpcBestCU, TComDataCU*& rpcTempCU, UInt uiDepth); // UInt uiDepth DEBUG_STRING_FN_DECLARE(sDebug), PartSize eParentPartSize = NUMBER_OF_PART_SIZES);
+
+	//	Void  preDefaultMethod(TComDataCU*& rpcTempCU);		// to predict every pixel in the given CU using default method which is  predicted in the process before
 
 	Void  reviseAnomalyResidue(TComDataCU*& rpcTempCU, UInt uiResidueThreshold);
 

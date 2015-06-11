@@ -48,6 +48,13 @@
 #include "TComPicYuv.h"
 #include "TLibVideoIO/TVideoIOYuv.h"
 
+#if PGR_ENABLE
+
+#include "PixelPrediction.h"
+
+#endif
+
+
 //! \ingroup TLibCommon
 //! \{
 
@@ -346,14 +353,14 @@ Void TComPicYuv::DefaultConvertPix(TComPicYuv* pcSrcPicYuv, const BitDepths& bit
 }
 
 
-#ifdef PGR_ENABLE
+#if PGR_ENABLE
 /*
 *	resample
 *	param:	uiMaxCUWidth		used for generating sample stride in horizontal direction
 *	param:	uiMaxCUHeight		used for generating sample stride in vertical direction
 *	param:	inverse				false for forward direction; true for backward direction
 */
-Void TComPicYuv::resample(UInt uiMaxCUWidth, UInt uiMaxCUHeight, Bool bInverse = false)
+Void TComPicYuv::resample(UInt uiMaxCUWidth, UInt uiMaxCUHeight, Bool bInverse)
 {
 	assert(uiMaxCUWidth != 0 && uiMaxCUHeight != 0);
 
@@ -371,8 +378,8 @@ Void TComPicYuv::resample(UInt uiMaxCUWidth, UInt uiMaxCUHeight, Bool bInverse =
 		UInt uiStrideXplus1 = uiStrideX + 1;
 		UInt uiStrideYplus1 = uiStrideY + 1;
 
-		UInt uiNumberUseBiggerStrideX = uiPicWidth % uiStrideX;		// number of bigger strides in x direction
-		UInt uiNumberUseBiggerStrideY = uiPicHeight % uiStrideY;	// number of bigger strides in y direction
+		UInt uiNumberUseBiggerStrideX = uiPicWidth % uiMaxCUWidth;		// number of bigger strides in x direction
+		UInt uiNumberUseBiggerStrideY = uiPicHeight % uiMaxCUHeight;	// number of bigger strides in y direction
 		
 		// allocate  pixels memory
 		Pel *piPicTmpBuf, *piPicTmpOrg;
@@ -382,24 +389,30 @@ Void TComPicYuv::resample(UInt uiMaxCUWidth, UInt uiMaxCUHeight, Bool bInverse =
 		UInt uiDstId, uiSrcId;
 		if (!bInverse)
 		{
-			// forward resample
+			// forward 
+
 			// traverse the resampled picture
 			for (UInt uiPicRsmpldY = 0; uiPicRsmpldY < uiPicHeight; uiPicRsmpldY++)
 			{
 				for (UInt uiPicRsmpldX = 0; uiPicRsmpldX < uiPicWidth; uiPicRsmpldX++)
 				{
-					UInt uiIdX = uiPicRsmpldX % uiMaxCUWidth;
-					UInt uiIdY = uiPicRsmpldY % uiMaxCUHeight;
+					//UInt uiIdX = uiPicRsmpldX % uiMaxCUWidth;
+					//UInt uiIdY = uiPicRsmpldY % uiMaxCUHeight;
 					UInt uiPicOrgX, uiPicOrgY;
-					if (uiIdX < uiNumberUseBiggerStrideX)
-						uiPicOrgX = uiPicRsmpldX / uiMaxCUWidth + uiIdX * uiStrideXplus1;	// corresponding X in the original picture
-					else
-						uiPicOrgX = uiPicRsmpldX / uiMaxCUWidth + uiNumberUseBiggerStrideX * uiStrideXplus1 + (uiIdX - uiNumberUseBiggerStrideX) * uiStrideX;
-					
-					if (uiIdY < uiNumberUseBiggerStrideY)
-						uiPicOrgY = uiPicRsmpldY / uiMaxCUHeight + uiIdY * uiStrideYplus1;	// corresponding Y in the original picture
-					else
-						uiPicOrgY = uiPicRsmpldY / uiMaxCUHeight + uiNumberUseBiggerStrideY * uiStrideYplus1 + (uiIdY - uiNumberUseBiggerStrideY) * uiStrideY;	
+					//if (uiIdX < uiNumberUseBiggerStrideX)
+					//	uiPicOrgX = uiPicRsmpldX / uiMaxCUWidth + uiIdX * uiStrideXplus1;	// corresponding X in the original picture
+					//else
+					//	uiPicOrgX = uiPicRsmpldX / uiMaxCUWidth + uiNumberUseBiggerStrideX * uiStrideXplus1 + (uiIdX - uiNumberUseBiggerStrideX) * uiStrideX;
+					//
+					//if (uiIdY < uiNumberUseBiggerStrideY)
+					//	uiPicOrgY = uiPicRsmpldY / uiMaxCUHeight + uiIdY * uiStrideYplus1;	// corresponding Y in the original picture
+					//else
+					//	uiPicOrgY = uiPicRsmpldY / uiMaxCUHeight + uiNumberUseBiggerStrideY * uiStrideYplus1 + (uiIdY - uiNumberUseBiggerStrideY) * uiStrideY;	
+
+					uiPicOrgX = g_auiRsmpldToOrg[cId][0][uiPicRsmpldX];
+					uiPicOrgY = g_auiRsmpldToOrg[cId][1][uiPicRsmpldY];
+
+					assert(uiPicOrgX != -1 && uiPicOrgY != -1);
 
 					// destination: resampled picture
 					uiDstId = uiPicStride * uiPicRsmpldY + uiPicRsmpldX;										// pixel index in resampled picture
@@ -423,30 +436,35 @@ Void TComPicYuv::resample(UInt uiMaxCUWidth, UInt uiMaxCUHeight, Bool bInverse =
 			{
 				for (UInt uiPicOrgX = 0; uiPicOrgX < uiPicWidth; uiPicOrgX++)
 				{
-					UInt uiThresholdX = uiNumberUseBiggerStrideX * uiStrideXplus1;	// original picture: x < uiThresholdX use uiStrideXplus1; use uiStrideX otherwise
-					UInt uiThresholdY = uiNumberUseBiggerStrideY * uiStrideYplus1;	// original picture: y < uiThresholdY use uiStrideYplus1; use uiStrideY otherwise
-					UInt uiIdX, uiIdY;					// index of ctu in resampled picture
+					//UInt uiThresholdX = uiNumberUseBiggerStrideX * uiStrideXplus1;	// original picture: x < uiThresholdX use uiStrideXplus1; use uiStrideX otherwise
+					//UInt uiThresholdY = uiNumberUseBiggerStrideY * uiStrideYplus1;	// original picture: y < uiThresholdY use uiStrideYplus1; use uiStrideY otherwise
+					//UInt uiIdX, uiIdY;					// index of ctu in resampled picture
 					UInt uiPicRsmpldX, uiPicRsmpldY;	// corresponding x,y in resampled picture
-					if (uiPicOrgX < uiThresholdX)
-					{
-						uiIdX = uiPicOrgX % uiStrideXplus1;
-						uiPicRsmpldX = uiPicOrgX / uiStrideXplus1 + uiIdX * uiMaxCUWidth;			
-					}
-					else
-					{
-						uiIdX = (uiPicOrgX - uiThresholdX) % uiStrideX;
-						uiPicRsmpldX = uiNumberUseBiggerStrideX + (uiPicOrgX - uiThresholdX) / uiStrideX + uiIdX * uiMaxCUWidth;
-					}
-					if (uiPicOrgY < uiThresholdY)
-					{
-						uiIdY = uiPicOrgY % uiStrideYplus1;
-						uiPicRsmpldY = uiPicOrgY / uiStrideYplus1 + uiIdY * uiMaxCUWidth;
-					}
-					else
-					{
-						uiIdY = (uiPicOrgY - uiThresholdY) % uiStrideY;
-						uiPicRsmpldY = uiNumberUseBiggerStrideY + (uiPicOrgY - uiThresholdY) / uiStrideY + uiIdY * uiMaxCUWidth;
-					}
+					//if (uiPicOrgX < uiThresholdX)
+					//{
+					//	uiIdX = uiPicOrgX % uiStrideXplus1;
+					//	uiPicRsmpldX = uiPicOrgX / uiStrideXplus1 + uiIdX * uiMaxCUWidth;			
+					//}
+					//else
+					//{
+					//	uiIdX = (uiPicOrgX - uiThresholdX) % uiStrideX;
+					//	uiPicRsmpldX = uiNumberUseBiggerStrideX + (uiPicOrgX - uiThresholdX) / uiStrideX + uiIdX * uiMaxCUWidth;
+					//}
+					//if (uiPicOrgY < uiThresholdY)
+					//{
+					//	uiIdY = uiPicOrgY % uiStrideYplus1;
+					//	uiPicRsmpldY = uiPicOrgY / uiStrideYplus1 + uiIdY * uiMaxCUWidth;
+					//}
+					//else
+					//{
+					//	uiIdY = (uiPicOrgY - uiThresholdY) % uiStrideY;
+					//	uiPicRsmpldY = uiNumberUseBiggerStrideY + (uiPicOrgY - uiThresholdY) / uiStrideY + uiIdY * uiMaxCUWidth;
+					//}
+
+					uiPicRsmpldX = g_auiOrgToRsmpld[cId][0][uiPicOrgX];
+					uiPicRsmpldY = g_auiOrgToRsmpld[cId][1][uiPicOrgY];
+					assert(uiPicRsmpldX != -1 && uiPicRsmpldY != -1);
+
 					// destination: orginal picture
 					uiDstId = uiPicStride * uiPicOrgY + uiPicOrgX;
 					// source: resampled picture

@@ -41,6 +41,10 @@
 #include "TLibCommon/TComCodingStatistics.h"
 #endif
 
+#if PGR_ENABLE
+#include "TLibCommon/PixelPrediction.h"
+#endif
+
 //! \ingroup TLibDecoder
 //! \{
 
@@ -196,6 +200,7 @@ Void TDecTop::executeLoopFilters(Int& poc, TComList<TComPic*>*& rpcListPic)
   poc                 = pcPic->getSlice(m_uiSliceIdx-1)->getPOC();
   rpcListPic          = &m_cListPic;
   m_cCuDecoder.destroy();
+
   m_bFirstSliceInPicture  = true;
 
   return;
@@ -345,8 +350,12 @@ Void TDecTop::xActivateParameterSets()
     m_cCuDecoder.create ( sps->getMaxTotalCUDepth(), sps->getMaxCUWidth(), sps->getMaxCUHeight(), sps->getChromaFormatIdc(), sps->getPLTMaxSize(), sps->getPLTMaxPredSize() );
     m_cCuDecoder.init   ( &m_cEntropyDecoder, &m_cTrQuant, &m_cPrediction );
     m_cTrQuant.init     ( sps->getMaxTrSize() );
-
+#if PGR_ENABLE
+	m_cCuDecoder.initEstPGR(m_pcPic);
+	m_cSliceDecoder.create(sps->getPicWidthInLumaSamples(), sps->getPicHeightInLumaSamples(), sps->getMaxCUWidth(), sps->getMaxCUHeight(), sps->getMaxTotalCUDepth(), sps->getChromaFormatIdc());
+#else
     m_cSliceDecoder.create();
+#endif
   }
   else
   {
@@ -414,6 +423,7 @@ Bool TDecTop::xDecodeSlice(InputNALUnit &nalu, Int &iSkipFrame, Int iPOCLastDisp
   const UInt64 originalSymbolCount = g_nSymbolCounter;
 #endif
 
+  // slice header
   m_cEntropyDecoder.decodeSliceHeader (m_apcSlicePilot, &m_parameterSetManager, m_prevTid0POC);
 
   // set POC for dependent slices in skipped pictures
@@ -681,6 +691,11 @@ Void TDecTop::xDecodeSPS(const std::vector<UChar> *pNaluData)
 #endif
   m_cEntropyDecoder.decodeSPS( sps );
   m_parameterSetManager.storeSPS(sps, pNaluData);
+
+#if PGR_ENABLE
+  initCoordinateMap(sps->getPicWidthInLumaSamples(), sps->getPicHeightInLumaSamples(), sps->getMaxCUWidth(), sps->getMaxCUHeight(), sps->getChromaFormatIdc());
+#endif
+
 }
 
 Void TDecTop::xDecodePPS(const std::vector<UChar> *pNaluData)
