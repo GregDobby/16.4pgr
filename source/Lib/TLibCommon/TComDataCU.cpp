@@ -89,6 +89,9 @@ TComDataCU::TComDataCU()
 		m_bPrevPLTReusedFlag[comp] = NULL;
 		m_piLastPLTInLcuFinal[comp] = NULL;
 		m_piEscapeFlag[comp] = NULL;
+#if PGR_ENABLE
+        m_CtuPalette[comp] = NULL ;
+#endif
 	}
 #if ADAPTIVE_QP_SELECTION
 	m_ArlCoeffIsAliasedAllocation = false;
@@ -191,7 +194,10 @@ Void TComDataCU::create(ChromaFormat chromaFormatIDC, UInt uiNumPartition, UInt 
 			m_puhCbf[compID] = (UChar*)xMalloc(UChar, uiNumPartition);
 			m_pcTrCoeff[compID] = (TCoeff*)xMalloc(TCoeff, totalSize);
 			memset(m_pcTrCoeff[compID], 0, (totalSize * sizeof(TCoeff)));
-
+#if PGR_ENABLE
+            m_CtuPalette[compID] = (Pel *) xMalloc(Pel,INTRA_PR_PALETTE_NUM) ;
+            memset(m_CtuPalette[compID] ,0 , INTRA_PR_PALETTE_NUM*sizeof(Pel));
+#endif
 #if ADAPTIVE_QP_SELECTION
 			if (pParentARLBuffer != 0)
 			{
@@ -357,6 +363,13 @@ Void TComDataCU::destroy()
 				xFree(m_pcTrCoeff[comp]);
 				m_pcTrCoeff[comp] = NULL;
 			}
+#if PGR_ENABLE
+            if(m_CtuPalette[comp] )
+            {
+                xFree(m_CtuPalette[comp]);
+                m_CtuPalette[comp] = NULL;
+            }
+#endif
 			if (m_explicitRdpcmMode[comp])
 			{
 				xFree(m_explicitRdpcmMode[comp]);

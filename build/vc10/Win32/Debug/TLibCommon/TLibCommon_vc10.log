@@ -1,5 +1,10 @@
-﻿Build started 2015/6/11 20:10:23.
+﻿Build started 2015/6/13 11:50:45.
+     1>Project "F:\Tsinghua\Work\Projects\hm16.4-pgr\build\vc10\TLibCommon_vc10.vcxproj" on node 2 (ClCompile target(s)).
+     1>ClCompile:
+         c:\Program Files (x86)\Microsoft Visual Studio 10.0\VC\bin\CL.exe /c /I"F:\Tsinghua\Work\Projects\hm16.4-pgr\build\\..\source\Lib\\" /I"F:\Tsinghua\Work\Projects\hm16.4-pgr\build\\..\compat\msvc" /I"C:\Program Files (x86)\Visual Leak Detector\include" /ZI /nologo /W3 /WX- /Od /Oy- /D WIN32 /D _DEBUG /D _LIB /D _CRT_SECURE_NO_WARNINGS /D _MBCS /Gm /EHsc /RTC1 /MTd /GS /fp:precise /Zc:wchar_t /Zc:forScope /Fo"F:\Tsinghua\Work\Projects\hm16.4-pgr\build\\vc10\Win32\Debug\TLibCommon\\" /Fd"F:\Tsinghua\Work\Projects\hm16.4-pgr\build\\vc10\Win32\Debug\TLibCommon\vc100.pdb" /Gd /TP /analyze- /errorReport:prompt ..\..\source\Lib\TLibCommon\PixelPrediction.cpp
+         PixelPrediction.cpp
+     1>Done Building Project "F:\Tsinghua\Work\Projects\hm16.4-pgr\build\vc10\TLibCommon_vc10.vcxproj" (ClCompile target(s)).
 
 Build succeeded.
 
-Time Elapsed 00:00:00.01
+Time Elapsed 00:00:01.18

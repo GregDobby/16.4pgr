@@ -121,6 +121,7 @@ private:
 
 #if PGR_ENABLE
   Bool*						m_pbPGRFlag;										///< pgr flag
+  Pel*                        m_CtuPalette[MAX_NUM_COMPONENT]; // Palette content
 #endif
 
   // -------------------------------------------------------------------------------------------------------------------
@@ -263,6 +264,7 @@ public:
   Bool  getPGRFlag                     (UInt idx)				{ return m_pbPGRFlag[idx]; }
   Void  setPGRFlag					   (UInt idx, Bool b)       { m_pbPGRFlag[idx] = b; }
   Void  setPGRFlagSubParts(Bool b, UInt absPartIdx, UInt depth);
+  Pel *getCtuPalette       (ComponentID compID)  {return m_CtuPalette[compID]; }
 #endif
 
 #if SCM_T0227_INTRABC_SIG_UNIFICATION

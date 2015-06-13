@@ -4,6 +4,7 @@
 #include "TComPicYuv.h"
 #include "TComDataCU.h"
 //#include "TComPic.h"
+//#include "TypeDef.h"
 #include <vector>
 
 using namespace std;
@@ -13,6 +14,9 @@ using namespace std;
 #define MAX_PT_NUM		16777216
 #define EXTEG			16
 
+#define GOLOMB_EXP_BUFFER  (sizeof(TCoeff)*8)
+#define INTRA_PR_PALETTE_NUM  4
+#define MAX_BUFFER 64*64
 // ======== Structures ========
 
 // ---- Template Matching ----
@@ -100,5 +104,18 @@ typedef struct _ResiPLTInfo
 	UInt m_uiSign;				///< 0 --> negitive, 1 --> positive
 	UInt m_uiPLTIdx;			///< corresponding index in the palette
 }ResiPLTInfo;
+
+int   ExpGolombEncode(int x, int *buffer,int &pos);
+int   ExpGolombDecode(int *buffer,int &pos);
+int   UnaryEncode(int n,int *buffer,int &pos);
+int   UnaryDecode(int *buffer,int &pos);
+int   ReadBits(int len,int *buffer,int &pos);
+int   ReadBit(int *buffer,int &pos);
+Void WriteBit(int n,TCoeff *buffer,int &pos) ;
+//Void WriteBits( TCoeff index, int num, TCoeff *buffer, int &pos)
+
+UInt  PositionCode_PathLeast(TComYuv *pcResiYuv,TComTU&     rTu,const ComponentID compID, TCoeff* pcCoeff  );
+UInt  PositionCode_Predict(TComYuv *pcResiYuv,TComTU&     rTu,const ComponentID compID, TCoeff* pcCoefff  );
+UInt  PositionCode_All(TComYuv *pcResiYuv,TComTU&     rTu,const ComponentID compID, TCoeff* pcCoeff );
 
 #endif // !_PIXEL_PREDICTION_
