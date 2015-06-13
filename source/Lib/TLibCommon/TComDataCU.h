@@ -260,7 +260,7 @@ public:
 
 #if PGR_ENABLE
   Bool* getPGRFlag					   ()						{ return m_pbPGRFlag; }
-  Bool  getPGRFlag                     (UInt idx)				{ return m_pbPGRFlag[idx]; }
+  Bool  getPGRFlag                     (UInt uiIdx)				{ return m_pbPGRFlag[uiIdx]; }
   Void  setPGRFlag					   (UInt idx, Bool b)       { m_pbPGRFlag[idx] = b; }
   Void  setPGRFlagSubParts(Bool b, UInt absPartIdx, UInt depth);
 #endif

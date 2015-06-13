@@ -1247,7 +1247,12 @@ Void TEncGOP::compressGOP(Int iPOCLast, Int iNumPicRcvd, TComList<TComPic*>& rcL
 			// init estimation data before resampling
 			m_pcEncTop->getCuEncoder()->initEstPGR(pcPic);
 			pcPic->getPicYuvOrg()->resample(pcSlice->getSPS()->getMaxCUWidth(), pcSlice->getSPS()->getMaxCUHeight(), false);
+
+			// derive global palette
+			derivePGRGlobalPLT(pcPic->getPicYuvOrg());
 		}
+
+
 
 #endif
 

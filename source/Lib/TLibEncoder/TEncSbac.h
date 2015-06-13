@@ -118,6 +118,11 @@ private:
   Void  xWriteEpExGolomb     ( UInt uiSymbol, UInt uiCount );
   Void  xWriteCoefRemainExGolomb ( UInt symbol, UInt &rParam, const Bool useLimitedPrefixLength, const Int maxLog2TrDynamicRange );
 
+#if PGR_ENABLE
+  Void xWriteEPExpGolombK0(UInt uiSymbol);
+  Void xWriteEPEXPGolombK(UInt uiSymbol, UInt uiK);
+#endif
+
   Void  xCopyFrom            ( const TEncSbac* pSrc );
   Void  xCopyContextsFrom    ( const TEncSbac* pSrc );
 

@@ -86,11 +86,9 @@ private:
 	TComYuv**               m_ppcNoCorrYuv;
 
 #if PGR_ENABLE
-	//TComPicYuv*				m_pcPreYuvPGR;	  ///< prediction yuv using pgr method
-	//TComPicYuv*				m_pcRecoYuvPGR;   ///< reconstruction yuv using pgr method
-	//TComPicYuv*				m_pcResiYuvPGR;	  ///< residue yuv using pgr method
 	// ---- Template Match ----
 	Pixel*					m_pPixel[MAX_NUM_COMPONENT];						///< pixel data
+	
 #endif
 
 	//  Data : encoder control
@@ -126,9 +124,6 @@ public:
 
 	// init estimation data
 	Void  initEstPGR(TComPic* pcPic);
-
-	// update pixels after compressing
-	//	Void updatePixelAfterCompressing(TComDataCU* pCtu);
 #endif
 
 	/// destroy internal buffers
@@ -150,11 +145,9 @@ protected:
 #if PGR_ENABLE
 	Void  xCompressCUPGR(TComDataCU*& rpcBestCU, TComDataCU*& rpcTempCU, UInt uiDepth); // UInt uiDepth DEBUG_STRING_FN_DECLARE(sDebug), PartSize eParentPartSize = NUMBER_OF_PART_SIZES);
 
-	//	Void  preDefaultMethod(TComDataCU*& rpcTempCU);		// to predict every pixel in the given CU using default method which is  predicted in the process before
+	Void  reviseAnomalyResidue(TComYuv* pcOrgYuv, TComYuv* pcPreYuv, TComYuv* pcResiYuv, UInt uiResidueThreshold);
 
-	Void  reviseAnomalyResidue(TComDataCU*& rpcTempCU, UInt uiResidueThreshold);
-
-	Void  xCheckPRGResidue(TComDataCU*& rpcBestCU, TComDataCU*& rpcTempCU);
+	Void  xCheckPRGResidue(TComDataCU*& rpcBestCU, TComDataCU*& rpcTempCU,UInt qp, Bool bTransquantBypass);
 #endif
 
 #else

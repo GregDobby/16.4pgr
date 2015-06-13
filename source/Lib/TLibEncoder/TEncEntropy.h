@@ -189,6 +189,10 @@ public:
 
   Void encodeCrossComponentPrediction( TComTU &rTu, ComponentID compID );
 
+#if PGR_ENABLE
+  Void encodePGRFlag();
+#endif
+
 private:
   Void xEncodeTransform        ( Bool& bCodeDQP, Bool& codeChromaQpAdj, TComTU &rTu );
 

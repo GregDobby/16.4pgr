@@ -388,6 +388,27 @@ Void TEncSbac::xWriteEpExGolomb( UInt uiSymbol, UInt uiCount )
   m_pcBinIf->encodeBinsEP( bins, numBins );
 }
 
+#if PGR_ENABLE
+Void TEncSbac::xWriteEPExpGolombK0(UInt uiSymbol)
+{
+	UInt uiTmp = uiSymbol + 1;
+	UInt uiNumBins = 0;
+	while (uiTmp > 0)
+	{
+		uiTmp = uiTmp >> 1;
+		uiNumBins++;
+	}
+
+	m_pcBinIf->encodeBinsEP(uiSymbol + 1, uiNumBins);
+}
+Void TEncSbac::xWriteEPEXPGolombK(UInt uiSymbol, UInt uiK)
+{
+	UInt uiTmp = uiSymbol - 1 + (1 << uiK);
+	xWriteEPExpGolombK0(uiTmp);
+}
+#endif
+
+
 Void TEncSbac::xWriteTruncBinCode(UInt uiSymbol, UInt uiMaxSymbol)
 {
   UInt uiThresh;

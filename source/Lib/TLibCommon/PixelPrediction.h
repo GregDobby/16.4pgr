@@ -1,9 +1,9 @@
 #ifndef _PIXEL_GRANULARITY_PREDICTION_
 #define _PIXEL_GRANULARITY_PREDICTION_
+
 #include "TLibCommon\TypeDef.h"
 #include "TComPicYuv.h"
 #include "TComDataCU.h"
-//#include "TComPic.h"
 #include <vector>
 
 using namespace std;
@@ -12,6 +12,7 @@ using namespace std;
 
 #define MAX_PT_NUM		16777216
 #define EXTEG			16
+#define MAX_PLT_SIZE	16
 
 // ======== Structures ========
 
@@ -53,6 +54,13 @@ typedef struct _PixelTemplate {
 	_PixelTemplate(UInt uiX, UInt uiY) :m_PX(uiX), m_PY(uiY), m_uiNumUsed(0), m_pptNext(NULL){};
 } PixelTemplate, *PPixelTemplate;
 
+typedef struct _Palette
+{
+	Pel m_pEntry[MAX_PLT_SIZE];
+	UInt m_uiSize;
+	_Palette():m_uiSize(0){};
+}Palette;
+
 // ======== Global Variable ========
 
 extern vector<UInt> g_auiOrgToRsmpld[MAX_NUM_COMPONENT][2];			// 0->x,1->y
@@ -67,6 +75,8 @@ extern int g_auiTemplateOffset[21][2];
 extern TComPicYuv* g_pcYuvPred;
 extern TComPicYuv* g_pcYuvResi;
 
+extern Palette*				g_ppPalette[MAX_NUM_COMPONENT];
+extern Palette*				g_ppCTUPalette[MAX_NUM_COMPONENT];
 // ======== Global Function ========
 
 // release hash table memory
@@ -94,11 +104,17 @@ Void appendNewTemplate(UInt uiHashValue, PixelTemplate*& rpNewTemplate);
 
 // ---- Revise Anomaly Residue ----
 
-typedef struct _ResiPLTInfo
+typedef struct _PelCount
 {
-	UInt m_uiX, m_uiY;			///< position in a CTU
-	UInt m_uiSign;				///< 0 --> negitive, 1 --> positive
-	UInt m_uiPLTIdx;			///< corresponding index in the palette
-}ResiPLTInfo;
+	Pel m_uiVal;
+	UInt m_uiCount;
+	_PelCount(Pel val) :m_uiVal(val), m_uiCount(0){};
+
+		// descend
+}PelCount;
+
+Void derivePGRGlobalPLT(TComPicYuv* pcOrgYuv);
+
+Void derivePGRPLT(TComDataCU* pcCu);
 
 #endif // !_PIXEL_PREDICTION_

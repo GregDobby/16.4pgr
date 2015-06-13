@@ -462,23 +462,6 @@ Void TAppDecTop::xWriteOutput( TComList<TComPic*>* pcListPic, UInt tId )
                                          conf.getWindowTopOffset() + defDisp.getWindowTopOffset(),
                                          conf.getWindowBottomOffset() + defDisp.getWindowBottomOffset() );
 		  const BitDepths &bitDepths = pcListPic->front()->getPicSym()->getSPS().getBitDepths();
-		  //TVideoIOYuv pred, resi;
-		  //pred.open("dec_pred.yuv", true, m_outputBitDepth, m_outputBitDepth, bitDepths.recon);
-		  //pred.write(g_pcYuvPred,
-			 // m_outputColourSpaceConvert,
-			 // conf.getWindowLeftOffset() + defDisp.getWindowLeftOffset(),
-			 // conf.getWindowRightOffset() + defDisp.getWindowRightOffset(),
-			 // conf.getWindowTopOffset() + defDisp.getWindowTopOffset(),
-			 // conf.getWindowBottomOffset() + defDisp.getWindowBottomOffset());;
-		  //pred.close();
-		  //resi.open("dec_resi.yuv", true, m_inputBitDepth, m_MSBExtendedBitDepth, m_internalBitDepth);
-		  //resi.write(g_pcYuvResi,
-			 // m_outputColourSpaceConvert,
-			 // conf.getWindowLeftOffset() + defDisp.getWindowLeftOffset(),
-			 // conf.getWindowRightOffset() + defDisp.getWindowRightOffset(),
-			 // conf.getWindowTopOffset() + defDisp.getWindowTopOffset(),
-			 // conf.getWindowBottomOffset() + defDisp.getWindowBottomOffset());;
-		  //resi.close();
         }
 
         // update POC of display order

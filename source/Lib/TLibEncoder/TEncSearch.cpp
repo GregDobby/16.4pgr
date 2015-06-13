@@ -3122,26 +3122,6 @@ Void TEncSearch::xPGRCodingTUBlock( TComYuv*    pcOrgYuv,
 
 	QpParam cQP(*pcCU, compID);
 
-	//===== get residual signal =====
-	{
-		// get residual
-		Pel*  pOrg = piOrg;
-		Pel*  pPred = piPred;
-		Pel*  pResi = piResi;
-
-		for (UInt uiY = 0; uiY < uiHeight; uiY++)
-		{
-			for (UInt uiX = 0; uiX < uiWidth; uiX++)
-			{
-				pResi[uiX] = pOrg[uiX] - pPred[uiX];
-			}
-
-			pOrg += uiStride;
-			pResi += uiStride;
-			pPred += uiStride;
-		}
-	}
-
 	//===== transform and quantization =====
 	//--- init rate estimation arrays for RDOQ ---
 	if (useTransformSkip ? m_pcEncCfg->getUseRDOQTS() : m_pcEncCfg->getUseRDOQ())
