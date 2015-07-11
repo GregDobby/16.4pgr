@@ -56,8 +56,11 @@ Void TDecSlice::create(UInt uiPicWidth, UInt uiPicHeight, UInt uiMaxCuWidth, UIn
 {
 	m_pcYuvPred = new TComPicYuv; m_pcYuvPred->create(uiPicWidth, uiPicHeight, chromaFormatIDC, uiMaxCuWidth, uiMaxCuHeight, uiMaxCuDepth, true);
 	m_pcYuvResi = new TComPicYuv; m_pcYuvResi->create(uiPicWidth, uiPicHeight, chromaFormatIDC, uiMaxCuWidth, uiMaxCuHeight, uiMaxCuDepth, true);
+	//g_pcYuvPred = new TComPicYuv; g_pcYuvPred->create(uiPicWidth, uiPicHeight, chromaFormatIDC, uiMaxCuWidth, uiMaxCuHeight, uiMaxCuDepth, true);
+	g_pcYuvAbnormalResi = new TComPicYuv; g_pcYuvAbnormalResi->create(uiPicWidth, uiPicHeight, chromaFormatIDC, uiMaxCuWidth, uiMaxCuHeight, uiMaxCuDepth, true);
 	g_pcYuvPred = new TComPicYuv; g_pcYuvPred->create(uiPicWidth, uiPicHeight, chromaFormatIDC, uiMaxCuWidth, uiMaxCuHeight, uiMaxCuDepth, true);
-	g_pcYuvResi = new TComPicYuv; g_pcYuvResi->create(uiPicWidth, uiPicHeight, chromaFormatIDC, uiMaxCuWidth, uiMaxCuHeight, uiMaxCuDepth, true); 
+	g_pcYuvResi = new TComPicYuv; g_pcYuvResi->create(uiPicWidth, uiPicHeight, chromaFormatIDC, uiMaxCuWidth, uiMaxCuHeight, uiMaxCuDepth, true);
+
 }
 #else
 Void TDecSlice::create()
@@ -80,7 +83,12 @@ Void TDecSlice::destroy()
 		delete m_pcYuvResi;
 		m_pcYuvResi = NULL;
 	}
-
+	if (g_pcYuvAbnormalResi)
+	{
+		g_pcYuvAbnormalResi->destroy();
+		delete g_pcYuvAbnormalResi;
+		g_pcYuvAbnormalResi = NULL;
+	}
 #endif
 }
 

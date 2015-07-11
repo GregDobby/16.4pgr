@@ -136,6 +136,12 @@ public:
   Void parseCUTransquantBypassFlag( TComDataCU* pcCU, UInt uiAbsPartIdx, UInt uiDepth );
   Void parsePLTModeFlag          ( TComDataCU* pcCU, UInt uiAbsPartIdx, UInt uiDepth );
   Void parsePLTModeSyntax        ( TComDataCU* pcCU, UInt uiAbsPartIdx, UInt uiDepth, UInt unNumComp);
+
+#if PGR_ENABLE
+  Int  parsePGR_ExpGolomb(TCoeff* pcCoef, UInt &n);
+  Void parseRevision(TComDataCU* pcCU, UInt uiAbsPartIdx, UInt uiDepth);
+  Void parsePalette(Palette& ppPalette);
+#endif
 #if !SCM_T0064_REMOVE_PLT_SHARING
   Void parsePLTSharingModeFlag   ( TComDataCU* pcCU, UInt uiAbsPartIdx, UInt uiDepth );
 #endif

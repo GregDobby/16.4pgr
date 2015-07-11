@@ -178,7 +178,18 @@ Void TDecEntropy::decodePredInfo    ( TComDataCU* pcCU, UInt uiAbsPartIdx, UInt 
     decodePUWise( pcCU, uiAbsPartIdx, uiDepth, pcSubCU );
   }
 }
-
+#if PGR_ENABLE
+Void TDecEntropy::decodeRevision(TComDataCU* pcCU, UInt uiAbsPartIdx, UInt uiDepth)
+{
+	m_pcEntropyDecoderIf->parseRevision(pcCU, uiAbsPartIdx, uiDepth);
+	return;
+}
+Void TDecEntropy::decodePalette(Palette& pPalette)
+{
+	m_pcEntropyDecoderIf->parsePalette(pPalette);
+	return;
+}
+#endif
 /** Parse I_PCM information.
  * \param pcCU  pointer to CUpointer to CU
  * \param uiAbsPartIdx CU index

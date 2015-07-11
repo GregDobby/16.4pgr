@@ -121,7 +121,13 @@ private:
 
 #if PGR_ENABLE
   Bool*						m_pbPGRFlag;										///< pgr flag
-  Pel*                        m_CtuPalette[MAX_NUM_COMPONENT]; // Palette content
+  
+  Int*                      m_piIndex[MAX_NUM_COMPONENT]; //palette index data.
+  Int                       m_iIndexNum[MAX_NUM_COMPONENT];// index num;
+
+  TCoeff*					m_pcPRBits[MAX_NUM_COMPONENT];//postion bits && palette index
+
+  TComYuv					*m_pcAbnormalResi;
 #endif
 
   // -------------------------------------------------------------------------------------------------------------------
@@ -261,10 +267,17 @@ public:
 
 #if PGR_ENABLE
   Bool* getPGRFlag					   ()						{ return m_pbPGRFlag; }
-  Bool  getPGRFlag                     (UInt idx)				{ return m_pbPGRFlag[idx]; }
+  Bool  getPGRFlag                     (UInt uiIdx)				{ return m_pbPGRFlag[uiIdx]; }
   Void  setPGRFlag					   (UInt idx, Bool b)       { m_pbPGRFlag[idx] = b; }
   Void  setPGRFlagSubParts(Bool b, UInt absPartIdx, UInt depth);
-  Pel *getCtuPalette       (ComponentID compID)  {return m_CtuPalette[compID]; }
+  
+  TCoeff *&      getPRBits              (ComponentID component)   { return m_pcPRBits[component]; }
+
+  Int*   getPaletteIndex( ComponentID  comp) { return m_piIndex[comp]; }  
+  Int*   getPaletteIndexNum() { return m_iIndexNum;}
+
+  TComYuv* getAbnormalResi() { return m_pcAbnormalResi; }
+  void setAbnormalResi(TComYuv* pcYuv) {  m_pcAbnormalResi = pcYuv; }
 #endif
 
 #if SCM_T0227_INTRABC_SIG_UNIFICATION

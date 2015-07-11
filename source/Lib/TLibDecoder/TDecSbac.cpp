@@ -38,6 +38,8 @@
 #include "TDecSbac.h"
 #include "TLibCommon/TComTU.h"
 #include "TLibCommon/TComTrQuant.h"
+#include <fstream>
+using namespace std;
 
 #if RExt__DECODER_DEBUG_BIT_STATISTICS
 #include "TLibCommon/TComCodingStatistics.h"
@@ -1377,6 +1379,126 @@ Void TDecSbac::parseScanRotationModeFlag( TComDataCU* pcCU, UInt uiAbsPartIdx, U
   pcCU->setPLTScanRotationModeFlagSubParts(uiSymbol ? true : false, uiAbsPartIdx, uiDepth);
 }
 
+
+
+#if PGR_ENABLE
+Int  TDecSbac::parsePGR_ExpGolomb(TCoeff* pcCoef, UInt &n)
+{
+	int result, GroupID;
+	int Base, Index;
+	UInt   uiSymbol;
+	UInt start = n;
+	//get GroupID   
+	do {
+		m_pcTDecBinIf->decodeBinEP(uiSymbol RExt__DECODER_DEBUG_BIT_STATISTICS_PASS_OPT_ARG(STATS__CABAC_BITS__SAO));
+		WriteBit(uiSymbol, pcCoef, n);
+	} while (uiSymbol);
+	GroupID = UnaryDecode(pcCoef, start);
+	assert(n == start);
+	//get decode value
+	if (GroupID == 0) {
+		result = 0;
+	}
+	else {
+		start = n;
+		for (UInt i = 0; i<GroupID; i++) {
+			m_pcTDecBinIf->decodeBinEP(uiSymbol  RExt__DECODER_DEBUG_BIT_STATISTICS_PASS_OPT_ARG(STATS__CABAC_BITS__SAO));
+			WriteBit(uiSymbol, pcCoef, n);
+		}
+		Base = (1 << GroupID) - 1;
+		Index = ReadBits(GroupID, pcCoef, start);
+		result = (Base + Index);
+		assert(n == start);
+	}
+	if (result % 2 == 0)
+		result = -result / 2;
+	else
+		result = (result + 1) / 2;
+	return result;
+}
+
+Void TDecSbac::parseRevision(TComDataCU* pcCU, UInt uiAbsPartIdx, UInt uiDepth)
+{
+	UInt uiNumValidComponents = pcCU->getPic()->getNumberValidComponents();
+	// shortest path
+
+	TCoeff buffer[4096 * 6];
+	UInt uiCur = 0;
+	TCoeff cCoordinate[4096][2];
+
+	//fstream fpos, fidx;
+
+	for (UInt ch = 0; ch < uiNumValidComponents; ch++)
+	{
+		//char tmp[64];
+		//sprintf(tmp, "dec_pos_%d.txt", ch);
+		//fpos.open(tmp, ios::app);
+		//sprintf(tmp, "dec_idx_%d.txt", ch);
+		//fidx.open(tmp, ios::app);
+
+		ComponentID cId = ComponentID(ch);
+		Pel* pAbnormalResi = g_pcYuvAbnormalResi->getAddr(cId, pcCU->getCtuRsAddr(), pcCU->getZorderIdxInCtu() + uiAbsPartIdx);
+		UInt uiStride = g_pcYuvAbnormalResi->getStride(cId);
+		UInt uiWidth = pcCU->getSlice()->getSPS()->getMaxCUWidth() >> uiDepth;
+		UInt uiHeight = pcCU->getSlice()->getSPS()->getMaxCUWidth() >> uiDepth;
+		// init with -1
+		Pel* piDst = pAbnormalResi;
+		for (UInt uiY = 0; uiY < uiHeight; uiY++)
+		{
+			memset(piDst, -1, sizeof(Pel)*uiWidth);
+			piDst += uiStride;
+		}
+
+		UInt uiNumIdx = parsePGR_ExpGolomb(buffer, uiCur);
+		for (UInt i = 0; i < uiNumIdx; i++)
+		{
+			Int x = parsePGR_ExpGolomb(buffer, uiCur);
+			Int y = parsePGR_ExpGolomb(buffer, uiCur);
+			
+			//fpos << x << "\t" << y << endl;
+			
+			if (i != 0)
+			{
+				cCoordinate[i][0] = x + cCoordinate[i - 1][0];
+				cCoordinate[i][1] = y + cCoordinate[i - 1][1];
+			}
+			else
+			{
+				cCoordinate[i][0] = x;
+				cCoordinate[i][1] = y;
+			}
+		}
+		UInt uiNumDec = 0;
+		while (uiNumDec < uiNumIdx)
+		{
+			UInt uiRunLength = parsePGR_ExpGolomb(buffer, uiCur);
+			UInt uiIdx = parsePGR_ExpGolomb(buffer, uiCur);
+			//fidx << uiRunLength << "\t" << uiIdx << endl;
+			for (UInt i = 0; i < uiRunLength; i++)
+			{
+				UInt x = cCoordinate[uiNumDec][0];
+				UInt y = cCoordinate[uiNumDec][1];
+				*(pAbnormalResi + y*uiStride + x) = uiIdx;
+				uiNumDec++;
+			}
+		}
+
+		//fpos.close();
+		//fidx.close();
+	}
+}
+
+Void TDecSbac::parsePalette(Palette& ppPalette)
+{
+	TCoeff buffer[1024];
+	UInt uiCur = 0;
+	UInt uiSize = parsePGR_ExpGolomb(buffer, uiCur);
+	for (UInt i = 0; i < uiSize; i++)
+	{
+		ppPalette.m_pEntry[i] = parsePGR_ExpGolomb(buffer, uiCur);
+	}
+}
+#endif
 
 /** parse skip flag
  * \param pcCU

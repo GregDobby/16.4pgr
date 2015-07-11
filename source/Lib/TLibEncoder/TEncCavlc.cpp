@@ -502,6 +502,29 @@ Void TEncCavlc::codeHrdParameters( const TComHRD *hrd, Bool commonInfPresentFlag
   }
 }
 
+#if PGR_ENABLE
+   Void TEncCavlc::codePaletteIndex(TComDataCU* pcCU, UInt uiAbsPartIdx, UInt uiDepth)
+   {
+       assert(0);
+       return;
+   }
+   Void TEncCavlc::codePosition(TComDataCU* pcCU, UInt uiAbsPartIdx, UInt uiDepth )
+   {
+       assert(0);
+       return;
+   }
+   Void TEncCavlc::codeRevision(TComDataCU* pcCU, UInt uiAbsPartIdx, UInt uiDepth)
+   {
+	   assert(0);
+	   return;
+   }
+   Void TEncCavlc::codePalette(Palette ppPalette)
+   {
+	   assert(0);
+	   return;
+   }
+#endif
+
 Void TEncCavlc::codeSPS( const TComSPS* pcSPS )
 {
 

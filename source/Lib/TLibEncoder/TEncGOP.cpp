@@ -1247,7 +1247,12 @@ Void TEncGOP::compressGOP(Int iPOCLast, Int iNumPicRcvd, TComList<TComPic*>& rcL
 			// init estimation data before resampling
 			m_pcEncTop->getCuEncoder()->initEstPGR(pcPic);
 			pcPic->getPicYuvOrg()->resample(pcSlice->getSPS()->getMaxCUWidth(), pcSlice->getSPS()->getMaxCUHeight(), false);
+
+			// derive global palette
+			derivePGRGlobalPLT(pcPic->getPicYuvOrg());
 		}
+
+
 
 #endif
 
@@ -1973,14 +1978,8 @@ Void TEncGOP::compressGOP(Int iPOCLast, Int iNumPicRcvd, TComList<TComPic*>& rcL
 
 #if PGR_ENABLE
 		pcPic->getPicYuvRec()->resample(pcSlice->getSPS()->getMaxCUWidth(), pcSlice->getSPS()->getMaxCUHeight(), true);
-		pcPic->getPicYuvRec()->copyToPic(pcPicYuvRecOut);
-
-		// check
-		//g_pcYuvPred = pcPic->getPicYuvPred();
-	    //g_pcYuvResi = pcPic->getPicYuvResi();
-#else
-		pcPic->getPicYuvRec()->copyToPic(pcPicYuvRecOut);
 #endif
+		pcPic->getPicYuvRec()->copyToPic(pcPicYuvRecOut);
 
 		pcPic->setReconMark(true);
 #if SCM_T0227_INTRABC_SIG_UNIFICATION

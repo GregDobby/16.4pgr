@@ -1,10 +1,13 @@
 #ifndef _PIXEL_GRANULARITY_PREDICTION_
 #define _PIXEL_GRANULARITY_PREDICTION_
+
 #include "TLibCommon\TypeDef.h"
 #include "TComPicYuv.h"
 #include "TComDataCU.h"
+
 //#include "TComPic.h"
 //#include "TypeDef.h"
+
 #include <vector>
 
 using namespace std;
@@ -13,10 +16,11 @@ using namespace std;
 
 #define MAX_PT_NUM		16777216
 #define EXTEG			16
+#define MAX_PLT_SIZE	16
 
 #define GOLOMB_EXP_BUFFER  (sizeof(TCoeff)*8)
 #define INTRA_PR_PALETTE_NUM  4
-#define MAX_BUFFER 64*64
+#define MAX_BUFFER 4096
 // ======== Structures ========
 
 // ---- Template Matching ----
@@ -57,6 +61,13 @@ typedef struct _PixelTemplate {
 	_PixelTemplate(UInt uiX, UInt uiY) :m_PX(uiX), m_PY(uiY), m_uiNumUsed(0), m_pptNext(NULL){};
 } PixelTemplate, *PPixelTemplate;
 
+typedef struct _Palette
+{
+	Pel m_pEntry[MAX_PLT_SIZE];
+	UInt m_uiSize;
+	_Palette() :m_uiSize(0){};
+}Palette;
+
 // ======== Global Variable ========
 
 extern vector<UInt> g_auiOrgToRsmpld[MAX_NUM_COMPONENT][2];			// 0->x,1->y
@@ -70,7 +81,13 @@ extern int g_auiTemplateOffset[21][2];
 
 extern TComPicYuv* g_pcYuvPred;
 extern TComPicYuv* g_pcYuvResi;
+extern TComPicYuv* g_pcYuvAbnormalResi;
 
+extern TCoeff *lumaCoef;
+extern TCoeff *lumaCoefR;
+
+extern Palette				g_ppPalette[MAX_NUM_COMPONENT];
+extern Palette				g_ppCTUPalette[MAX_NUM_COMPONENT];
 // ======== Global Function ========
 
 // release hash table memory
@@ -98,24 +115,32 @@ Void appendNewTemplate(UInt uiHashValue, PixelTemplate*& rpNewTemplate);
 
 // ---- Revise Anomaly Residue ----
 
-typedef struct _ResiPLTInfo
+typedef struct _PelCount
 {
-	UInt m_uiX, m_uiY;			///< position in a CTU
-	UInt m_uiSign;				///< 0 --> negitive, 1 --> positive
-	UInt m_uiPLTIdx;			///< corresponding index in the palette
-}ResiPLTInfo;
+	Pel m_uiVal;
+	UInt m_uiCount;
+	_PelCount(Pel val) :m_uiVal(val), m_uiCount(0){};
 
-int   ExpGolombEncode(int x, int *buffer,int &pos);
-int   ExpGolombDecode(int *buffer,int &pos);
-int   UnaryEncode(int n,int *buffer,int &pos);
-int   UnaryDecode(int *buffer,int &pos);
-int   ReadBits(int len,int *buffer,int &pos);
-int   ReadBit(int *buffer,int &pos);
-Void WriteBit(int n,TCoeff *buffer,int &pos) ;
+	// descend
+}PelCount;
+
+Void derivePGRGlobalPLT(TComPicYuv* pcOrgYuv);
+
+Void derivePGRPLT(TComDataCU* pcCu);
+
+int getG0Bits(int x);
+int   ExpGolombEncode(int x, int *buffer, UInt &pos);
+int   ExpGolombDecode(int *buffer, UInt &pos);
+int   UnaryEncode(int n, int *buffer, UInt &pos);
+int   UnaryDecode(int *buffer, UInt &pos);
+int   ReadBits(int len, int *buffer, UInt &pos);
+int   ReadBit(int *buffer, UInt &pos);
+Void WriteBit(int n, TCoeff *buffer, UInt &pos);
+
 //Void WriteBits( TCoeff index, int num, TCoeff *buffer, int &pos)
 
-UInt  PositionCode_PathLeast(TComYuv *pcResiYuv,TComTU&     rTu,const ComponentID compID, TCoeff* pcCoeff  );
-UInt  PositionCode_Predict(TComYuv *pcResiYuv,TComTU&     rTu,const ComponentID compID, TCoeff* pcCoefff  );
-UInt  PositionCode_All(TComYuv *pcResiYuv,TComTU&     rTu,const ComponentID compID, TCoeff* pcCoeff );
+Void  PositionCode_PathLeast(TComYuv *pcResiYuv, const ComponentID compID, TCoeff* pcCoeff, UInt* puiPLTIdx, UInt& uiNumIdx);
+
+UInt  PositionCode_Predict(TComYuv *pcResiYuv, TComTU&     rTu, const ComponentID compID, TCoeff* pcCoefff);
 
 #endif // !_PIXEL_PREDICTION_

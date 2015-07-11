@@ -1966,6 +1966,20 @@ TEncSearch::xSetIntraResultLumaQT(TComYuv* pcRecoYuv, TComTU &rTu)
       const TCoeff* srcCoeff = m_ppcQTTempCoeff[COMPONENT_Y][uiQTLayer] + coeffOffset;
       TCoeff* destCoeff      = pcCU->getCoeff(COMPONENT_Y) + coeffOffset;
       ::memcpy( destCoeff, srcCoeff, sizeof(TCoeff)*numCoeffInBlock );
+
+	  //int x1, x2, y1, y2;
+	  //x1 = pcCU->getCUPelX() + tuRect.x0;
+	  //x2 = x1 + tuRect.width;
+	  //y1 = pcCU->getCUPelY() + tuRect.y0;
+	  //y2 = y1 + tuRect.height;
+	  //int i = 0;
+	  //for (int x = x1; x < x2; x++)
+	  //{
+		 // for (int y = y1; y < y2; y++)
+		 // {
+			//  lumaCoefR[x + y * 1920] = destCoeff[i++];
+		 // }
+	  //}
 #if ADAPTIVE_QP_SELECTION
       const TCoeff* srcArlCoeff = m_ppcQTTempArlCoeff[COMPONENT_Y][ uiQTLayer ] + coeffOffset;
       TCoeff* destArlCoeff      = pcCU->getArlCoeff (COMPONENT_Y)               + coeffOffset;
@@ -2924,7 +2938,7 @@ Void TEncSearch::xRecurPGRLumaCodingQT(TComYuv*    pcOrgYuv,
 	const UInt    uiTrDepth = rTu.GetTransformDepthRel();
 	const UInt    uiLog2TrSize = rTu.GetLog2LumaTrSize();
 	Bool    bCheckFull = (uiLog2TrSize <= pcCU->getSlice()->getSPS()->getQuadtreeTULog2MaxSize());
-	Bool    bCheckSplit = (uiLog2TrSize > 5);//pcCU->getQuadtreeTULog2MinSizeInCU(uiAbsPartIdx));
+	Bool    bCheckSplit = (uiLog2TrSize > 5);// pcCU->getQuadtreeTULog2MinSizeInCU(uiAbsPartIdx));
 
 
 #if SCM_T0121_INFER_TU_SPLIT_ENCODER
@@ -3099,12 +3113,25 @@ Void TEncSearch::xPGRCodingTUBlock( TComYuv*    pcOrgYuv,
 	Pel					 *piPred = pcPredYuv->getAddr(compID, uiAbsPartIdx);
 	Pel					 *piResi = pcResiYuv->getAddr(compID, uiAbsPartIdx);
 	Pel					 *piReco = pcPredYuv->getAddr(compID, uiAbsPartIdx);
+
+	TComYuv	*tmpResi = new TComYuv;
+	tmpResi->create(pcResiYuv->getWidth(COMPONENT_Y), pcResiYuv->getHeight(COMPONENT_Y), pcResiYuv->getChromaFormat());
+	pcResiYuv->copyPartToComponent(compID, tmpResi, 0);
+	Pel					*piTmpResi = tmpResi->getAddr(compID, uiAbsPartIdx);
+
 	const UInt           uiQTLayer = sps.getQuadtreeTULog2MaxSize() - uiLog2TrSize;
 	Pel					 *piRecQt = m_pcQTTempTComYuv[uiQTLayer].getAddr(compID, uiAbsPartIdx);
+
 	const UInt           uiRecQtStride = m_pcQTTempTComYuv[uiQTLayer].getStride(compID);
+
 	const UInt           uiZOrder = pcCU->getZorderIdxInCtu() + uiAbsPartIdx;
+
 	Pel					 *piRecIPred = pcCU->getPic()->getPicYuvRec()->getAddr(compID, pcCU->getCtuRsAddr(), uiZOrder);
 	UInt				 uiRecIPredStride = pcCU->getPic()->getPicYuvRec()->getStride(compID);
+	
+	UInt				 uiAbResiStride = g_pcYuvAbnormalResi->getStride(compID);
+	Pel					 *pAbResi = g_pcYuvAbnormalResi->getAddr(compID, pcCU->getCtuRsAddr(), uiZOrder);
+
 
 	TCoeff				 *pcCoeff = m_ppcQTTempCoeff[compID][uiQTLayer] + rTu.getCoefficientOffset(compID);
 	Bool				 useTransformSkip = pcCU->getTransformSkip(uiAbsPartIdx, compID);
@@ -3121,26 +3148,6 @@ Void TEncSearch::xPGRCodingTUBlock( TComYuv*    pcOrgYuv,
 #endif
 
 	QpParam cQP(*pcCU, compID);
-
-	//===== get residual signal =====
-	{
-		// get residual
-		Pel*  pOrg = piOrg;
-		Pel*  pPred = piPred;
-		Pel*  pResi = piResi;
-
-		for (UInt uiY = 0; uiY < uiHeight; uiY++)
-		{
-			for (UInt uiX = 0; uiX < uiWidth; uiX++)
-			{
-				pResi[uiX] = pOrg[uiX] - pPred[uiX];
-			}
-
-			pOrg += uiStride;
-			pResi += uiStride;
-			pPred += uiStride;
-		}
-	}
 
 	//===== transform and quantization =====
 	//--- init rate estimation arrays for RDOQ ---
@@ -3160,7 +3167,7 @@ Void TEncSearch::xPGRCodingTUBlock( TComYuv*    pcOrgYuv,
 	m_pcTrQuant->selectLambda(compID);
 #endif
 
-	m_pcTrQuant->transformNxN(rTu, compID, piResi, uiStride, pcCoeff,
+	m_pcTrQuant->transformNxN(rTu, compID, piTmpResi/*piResi*/, uiStride, pcCoeff,
 #if ADAPTIVE_QP_SELECTION
 		pcArlCoeff,
 #endif
@@ -3175,11 +3182,11 @@ Void TEncSearch::xPGRCodingTUBlock( TComYuv*    pcOrgYuv,
 	if (uiAbsSum > 0)
 #endif
 	{
-		m_pcTrQuant->invTransformNxN(rTu, compID, piResi, uiStride, pcCoeff, cQP DEBUG_STRING_PASS_INTO_OPTIONAL(&sDebug, (DebugOptionList::DebugString_InvTran.getInt()&debugPredModeMask)));
+		m_pcTrQuant->invTransformNxN(rTu, compID, piTmpResi/*piResi*/, uiStride, pcCoeff, cQP DEBUG_STRING_PASS_INTO_OPTIONAL(&sDebug, (DebugOptionList::DebugString_InvTran.getInt()&debugPredModeMask)));
 	}
 	else
 	{
-		Pel* pResi = piResi;
+		Pel* pResi = piTmpResi/*piResi*/;
 		memset(pcCoeff, 0, sizeof(TCoeff)* uiWidth * uiHeight);
 		for (UInt uiY = 0; uiY < uiHeight; uiY++)
 		{
@@ -3187,95 +3194,70 @@ Void TEncSearch::xPGRCodingTUBlock( TComYuv*    pcOrgYuv,
 			pResi += uiStride;
 		}
 	}
+	//if (compID == COMPONENT_Y)
+	//{
+	//	int x1, x2, y1, y2;
+	//	x1 = pcCU->getCUPelX() + rect.x0;
+	//	x2 = x1 + rect.width;
+	//	y1 = pcCU->getCUPelY() + rect.y0;
+	//	y2 = y1 + rect.height;
+	//	int i = 0;
+	//	for (int x = x1; x < x2; x++)
+	//	{
+	//		for (int y = y1; y < y2; y++)
+	//		{
+	//			lumaCoef[x + y * 1920] = pcCoeff[i++];
+	//		}
+	//	}
+	//}
+	
+
 	//===== reconstruction =====
 	{
 		Pel* pPred = piPred;
-		Pel* pResi = piResi;
+		Pel* pResi = piTmpResi/*piResi*/;
 		Pel* pReco = piReco;
 		Pel* pRecQt = piRecQt;
 		Pel* pRecIPred = piRecIPred;
-
-	    //fstream fReco;
-		//fReco.open("t_reco.txt",ios::out);
-#ifdef DEBUG_STRING
-		std::stringstream ss(stringstream::out);
-		const Bool bDebugPred = ((DebugOptionList::DebugString_Pred.getInt()&debugPredModeMask) && DEBUG_STRING_CHANNEL_CONDITION(compID));
-		const Bool bDebugResi = ((DebugOptionList::DebugString_Resi.getInt()&debugPredModeMask) && DEBUG_STRING_CHANNEL_CONDITION(compID));
-		const Bool bDebugReco = ((DebugOptionList::DebugString_Reco.getInt()&debugPredModeMask) && DEBUG_STRING_CHANNEL_CONDITION(compID));
-
-		if (bDebugPred || bDebugResi || bDebugReco)
+		Pel* pOrg = piOrg;
+		Pel* pCResi = g_pcYuvResi->getAddr(compID, pcCU->getCtuRsAddr(), uiZOrder);
 		{
-			ss << "###: " << "CompID: " << compID << " pred mode (ch/fin): " << uiChPredMode << "/" << uiChFinalMode << " absPartIdx: " << rTu.GetAbsPartIdxTU() << "\n";
 			for (UInt uiY = 0; uiY < uiHeight; uiY++)
 			{
-				ss << "###: ";
-				if (bDebugPred)
-				{
-					ss << " - pred: ";
-					for (UInt uiX = 0; uiX < uiWidth; uiX++)
-					{
-						ss << pPred[uiX] << ", ";
-					}
-				}
-				if (bDebugResi)
-				{
-					ss << " - resi: ";
-				}
 				for (UInt uiX = 0; uiX < uiWidth; uiX++)
 				{
-					if (bDebugResi)
+					if ( pAbResi[uiX]!=-1)
 					{
-						ss << pResi[uiX] << ", ";
+						UInt uiPLTIdx = pAbResi[uiX];
+						assert(uiPLTIdx < 4 && uiPLTIdx >= 0);
+						pReco[uiX] = Pel(ClipBD<Int>(Int(g_ppPalette[compID].m_pEntry[uiPLTIdx]) + Int(pResi[uiX]), bitDepth));
 					}
-					pReco[uiX] = Pel(ClipBD<Int>(Int(pPred[uiX]) + Int(pResi[uiX]), bitDepth));
+					else
+					{
+						pReco[uiX] = Pel(ClipBD<Int>(Int(pPred[uiX]) + Int(pResi[uiX]), bitDepth));
+					}
 					pRecQt[uiX] = pReco[uiX];
 					pRecIPred[uiX] = pReco[uiX];
-				}
-				if (bDebugReco)
-				{
-					ss << " - reco: ";
-					for (UInt uiX = 0; uiX < uiWidth; uiX++)
-					{
-						ss << pReco[uiX] << ", ";
-					}
+
+					pCResi[uiX] = pResi[uiX];
 				}
 				pPred += uiStride;
 				pResi += uiStride;
 				pReco += uiStride;
 				pRecQt += uiRecQtStride;
 				pRecIPred += uiRecIPredStride;
-				ss << "\n";
-			}
-			DEBUG_STRING_APPEND(sDebug, ss.str())
-		}
-		else
-#endif
-		
+				pAbResi += uiAbResiStride;
 
-		{
-			for (UInt uiY = 0; uiY < uiHeight; uiY++)
-			{
-				for (UInt uiX = 0; uiX < uiWidth; uiX++)
-				{
-					pReco[uiX] = Pel(ClipBD<Int>(Int(pPred[uiX]) + Int(pResi[uiX]), bitDepth));
-					pRecQt[uiX] = pReco[uiX];
-					pRecIPred[uiX] = pReco[uiX];
-					//fReco << pReco[uiX] << "\t";
-				}
-				pPred += uiStride;
-				pResi += uiStride;
-				pReco += uiStride;
-				pRecQt += uiRecQtStride;
-				pRecIPred += uiRecIPredStride;
-
-				//fReco << endl;
+				pCResi += uiRecIPredStride;
 			}
-			//fReco.close();
 		}
 	}
 
 	//===== update distortion =====
 	ruiDist += m_pcRdCost->getDistPart(bitDepth, piReco, uiStride, piOrg, uiStride, uiWidth, uiHeight, compID);
+
+	tmpResi->destroy();
+	delete tmpResi;
 }
 
 Void TEncSearch::estPGRChromaQT( TComDataCU* pcCU,
@@ -3311,12 +3293,12 @@ Void TEncSearch::estPGRChromaQT( TComDataCU* pcCU,
 
 	//----- compare -----
 	xSetIntraResultChromaQT(rpcRecoYuv, tuRecurseWithPU);
+
 	for (UInt componentIndex = COMPONENT_Cb; componentIndex < numberValidComponents; componentIndex++)
 	{
 		const ComponentID compID = ComponentID(componentIndex);
 		::memcpy(m_puhQTTempCbf[compID], pcCU->getCbf(compID), uiQNumParts * sizeof(UChar));
 		::memcpy(m_puhQTTempTransformSkipFlag[compID], pcCU->getTransformSkip(compID), uiQNumParts * sizeof(UChar));
-		//::memcpy(m_phQTTempCrossComponentPredictionAlpha[compID], pcCU->getCrossComponentPredictionAlpha(compID), uiQNumParts * sizeof(Char));
 	}
 
 	for (UInt componentIndex = COMPONENT_Cb; componentIndex < numberValidComponents; componentIndex++)
@@ -3324,7 +3306,6 @@ Void TEncSearch::estPGRChromaQT( TComDataCU* pcCU,
 		const ComponentID compID = ComponentID(componentIndex);
 		::memcpy(pcCU->getCbf(compID), m_puhQTTempCbf[compID], uiQNumParts * sizeof(UChar));
 		::memcpy(pcCU->getTransformSkip(compID), m_puhQTTempTransformSkipFlag[compID], uiQNumParts * sizeof(UChar));
-		//::memcpy(pcCU->getCrossComponentPredictionAlpha(compID), m_phQTTempCrossComponentPredictionAlpha[compID], uiQNumParts * sizeof(Char));
 	}
 
 	// add distrotion

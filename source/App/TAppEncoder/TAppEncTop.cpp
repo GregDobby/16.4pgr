@@ -486,12 +486,19 @@ Void TAppEncTop::encode()
 		pcPicYuvOrg->create(m_iSourceWidth, m_iSourceHeight, m_chromaFormatIDC, m_uiMaxCUWidth, m_uiMaxCUHeight, m_uiMaxTotalCUDepth, true);
 		cPicYuvTrueOrg.create(m_iSourceWidth, m_iSourceHeight, m_chromaFormatIDC, m_uiMaxCUWidth, m_uiMaxCUHeight, m_uiMaxTotalCUDepth, true);
 	}
+
 #if PGR_ENABLE
-	g_pcYuvPred = new TComPicYuv;
-	g_pcYuvResi = new TComPicYuv;
-	g_pcYuvPred->create(m_iSourceWidth, m_iSourceHeight, m_chromaFormatIDC, m_uiMaxCUWidth, m_uiMaxCUHeight, m_uiMaxTotalCUDepth, true);
-	g_pcYuvResi->create(m_iSourceWidth, m_iSourceHeight, m_chromaFormatIDC, m_uiMaxCUWidth, m_uiMaxCUHeight, m_uiMaxTotalCUDepth, true);
+	//TComPicYuv* pcYuvRsmpld = new TComPicYuv;
+	//pcYuvRsmpld->create(m_iSourceWidth, m_iSourceHeight, m_chromaFormatIDC, m_uiMaxCUWidth, m_uiMaxCUHeight, m_uiMaxTotalCUDepth, true);
+	//TVideoIOYuv rsmpld;
+	//pred.open("pred.yuv", true, m_inputBitDepth, m_MSBExtendedBitDepth, m_internalBitDepth);
+	//pred.write(g_pcYuvPred, (!m_outputInternalColourSpace) ? m_inputColourSpaceConvert : IPCOLOURSPACE_UNCHANGED, m_confWinLeft, m_confWinRight, m_confWinTop, m_confWinBottom);
+	//pred.close();
+	//resi.open("resi.yuv", true, m_inputBitDepth, m_MSBExtendedBitDepth, m_internalBitDepth);
+	//resi.write(g_pcYuvResi, (!m_outputInternalColourSpace) ? m_inputColourSpaceConvert : IPCOLOURSPACE_UNCHANGED, m_confWinLeft, m_confWinRight, m_confWinTop, m_confWinBottom);
+	//resi.close();
 #endif
+
 	while (!bEos)
 	{
 		// get buffers
@@ -515,16 +522,6 @@ Void TAppEncTop::encode()
 			m_cTEncTop.setFramesToBeEncoded(m_iFrameRcvd);
 		}
 
-		// test resample
-		//pcPicYuvOrg->resample(m_uiMaxCUWidth, m_uiMaxCUHeight, false);
-		//TVideoIOYuv resampled;
-		//resampled.open("resampled.yuv", true, m_inputBitDepth, m_MSBExtendedBitDepth, m_internalBitDepth);
-		//resampled.write(pcPicYuvOrg, (!m_outputInternalColourSpace) ? m_inputColourSpaceConvert : IPCOLOURSPACE_UNCHANGED, m_confWinLeft, m_confWinRight, m_confWinTop, m_confWinBottom);
-		//resampled.close();
-		//pcPicYuvOrg->resample(m_uiMaxCUWidth, m_uiMaxCUHeight, true);
-		//resampled.open("resampled_inverse.yuv", true, m_inputBitDepth, m_MSBExtendedBitDepth, m_internalBitDepth);
-		//resampled.write(pcPicYuvOrg, (!m_outputInternalColourSpace) ? m_inputColourSpaceConvert : IPCOLOURSPACE_UNCHANGED, m_confWinLeft, m_confWinRight, m_confWinTop, m_confWinBottom);
-		//resampled.close();
 
 		// call encoding function for one frame
 		if (m_isField)
@@ -543,16 +540,6 @@ Void TAppEncTop::encode()
 			outputAccessUnits.clear();
 		}
 	}
-
-#if PGR_ENABLE
-	TVideoIOYuv pred, resi;
-	pred.open("pred.yuv", true, m_inputBitDepth, m_MSBExtendedBitDepth, m_internalBitDepth);
-	pred.write(g_pcYuvPred, (!m_outputInternalColourSpace) ? m_inputColourSpaceConvert : IPCOLOURSPACE_UNCHANGED, m_confWinLeft, m_confWinRight, m_confWinTop, m_confWinBottom);
-	pred.close();
-	resi.open("resi.yuv", true, m_inputBitDepth, m_MSBExtendedBitDepth, m_internalBitDepth);
-	resi.write(g_pcYuvResi, (!m_outputInternalColourSpace) ? m_inputColourSpaceConvert : IPCOLOURSPACE_UNCHANGED, m_confWinLeft, m_confWinRight, m_confWinTop, m_confWinBottom);
-	resi.close();
-#endif
 
 	m_cTEncTop.printSummary(m_isField);
 
@@ -657,7 +644,7 @@ Void TAppEncTop::xWriteOutput(std::ostream& bitstreamFile, Int iNumEncoded, cons
 			rateStatsAccum(auBottom, statsBottom);
 		}
 	}
-	else
+	else 
 	{
 		Int i;
 
@@ -675,6 +662,16 @@ Void TAppEncTop::xWriteOutput(std::ostream& bitstreamFile, Int iNumEncoded, cons
 			if (m_pchReconFile)
 			{
 				m_cTVideoIOYuvReconFile.write(pcPicYuvRec, ipCSC, m_confWinLeft, m_confWinRight, m_confWinTop, m_confWinBottom);
+				//TVideoIOYuv resi, abresi,pred;
+				//resi.open("resi.yuv", true, m_inputBitDepth, m_MSBExtendedBitDepth, m_internalBitDepth);  
+				//abresi.open("abresi.yuv", true, m_inputBitDepth, m_MSBExtendedBitDepth, m_internalBitDepth);
+				//pred.open("pred.yuv", true, m_inputBitDepth, m_MSBExtendedBitDepth, m_internalBitDepth);
+				//resi.write(g_pcYuvResi, ipCSC, m_confWinLeft, m_confWinRight, m_confWinTop, m_confWinBottom);
+				//abresi.write(g_pcYuvAbnormalResi, ipCSC, m_confWinLeft, m_confWinRight, m_confWinTop, m_confWinBottom);
+				//pred.write(g_pcYuvPred, ipCSC, m_confWinLeft, m_confWinRight, m_confWinTop, m_confWinBottom);
+				//resi.close();
+				//abresi.close();
+				//pred.close();
 			}
 
 			const AccessUnit& au = *(iterBitstream++);

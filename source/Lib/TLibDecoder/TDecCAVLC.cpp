@@ -1808,6 +1808,17 @@ Void TDecCavlc::parsePLTModeFlag( TComDataCU* pcCU, UInt uiAbsPartIdx, UInt uiDe
   assert(0);
 }
 
+#if PGR_ENABLE
+Void TDecCavlc::parseRevision(TComDataCU* pcCU, UInt uiAbsPartIdx, UInt uiDepth)
+{
+	assert(0);
+}
+Void TDecCavlc::parsePalette(Palette& ppPalette)
+{
+	assert(0);
+}
+#endif
+
 #if !SCM_T0064_REMOVE_PLT_SHARING
 Void TDecCavlc::parsePLTSharingModeFlag( TComDataCU* pcCU, UInt uiAbsPartIdx, UInt uiDepth )
 {

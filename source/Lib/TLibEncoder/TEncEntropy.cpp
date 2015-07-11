@@ -127,7 +127,28 @@ Void TEncEntropy::encodeVPS( const TComVPS* pcVPS )
   m_pcEntropyCoderIf->codeVPS( pcVPS );
   return;
 }
-
+#if PGR_ENABLE
+  Void TEncEntropy::encodePaletteIndex(TComDataCU* pcCU, UInt uiAbsPartIdx, UInt uiDepth)
+  {
+      m_pcEntropyCoderIf->codePaletteIndex( pcCU, uiAbsPartIdx, uiDepth);
+      return;
+  }
+  Void TEncEntropy::encodePosition(TComDataCU* pcCU, UInt uiAbsPartIdx, UInt uiDepth )
+  {
+      m_pcEntropyCoderIf->codePosition(pcCU,uiAbsPartIdx,uiDepth);
+        return;
+  }
+  Void TEncEntropy::encodeRevison(TComDataCU* pcCU,UInt uiAbsPartIdx, UInt uiDepth)
+  {
+	  m_pcEntropyCoderIf->codeRevision(pcCU, uiAbsPartIdx, uiDepth);
+	  return;
+  }
+  Void TEncEntropy::encodePalette(Palette ppPalette)
+  {
+	  m_pcEntropyCoderIf->codePalette(ppPalette);
+	  return;
+  }
+#endif
 Void TEncEntropy::encodeSkipFlag( TComDataCU* pcCU, UInt uiAbsPartIdx, Bool bRD )
 {
 #if SCM_T0227_INTRABC_SIG_UNIFICATION
@@ -705,6 +726,7 @@ Void TEncEntropy::encodeChromaQpAdjustment( TComDataCU* cu, UInt absPartIdx, Boo
 
   m_pcEntropyCoderIf->codeChromaQpAdjustment( cu, absPartIdx );
 }
+
 
 // texture
 

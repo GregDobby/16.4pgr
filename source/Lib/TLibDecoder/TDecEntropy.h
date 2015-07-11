@@ -98,6 +98,11 @@ public:
 
   virtual Void parseIntraDirChroma( TComDataCU* pcCU, UInt uiAbsPartIdx, UInt uiDepth ) = 0;
 
+#if PGR_ENABLE
+  virtual Void parseRevision(TComDataCU* pcCU, UInt uiAbsPartIdx, UInt uiDepth) = 0;
+  virtual Void parsePalette(Palette& ppPalette) = 0;
+#endif
+
 #if !SCM_T0227_INTRABC_SIG_UNIFICATION
   virtual Void parseIntraBCFlag   ( TComDataCU* pcCU, UInt uiAbsPartIdx, UInt uiPartIdx, UInt uiDepth ) = 0;
   virtual Void parseIntraBC       ( TComDataCU* pcCU, UInt uiAbsPartIdx, UInt uiPartIdx, UInt uiDepth ) = 0;
@@ -191,6 +196,11 @@ public:
 
   Void decodeQP                ( TComDataCU* pcCU, UInt uiAbsPartIdx );
   Void decodeChromaQpAdjustment( TComDataCU* pcCU, UInt uiAbsPartIdx );
+
+#if PGR_ENABLE
+  Void decodeRevision(TComDataCU* pcCU, UInt uiAbsPartIdx, UInt uiDepth);
+  Void decodePalette(Palette& pPalette);
+#endif
 
 private:
 

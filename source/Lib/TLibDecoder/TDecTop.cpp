@@ -662,6 +662,15 @@ Bool TDecTop::xDecodeSlice(InputNALUnit &nalu, Int &iSkipFrame, Int iPOCLastDisp
   //  Decode a picture
   m_cGopDecoder.decompressSlice(nalu.m_Bitstream, m_pcPic);
 
+#if PGR_ENABLE
+  if (pcSlice->getSliceType() == I_SLICE)
+  {
+	  //m_pcPic->getPicYuvRec()->resample(pcSlice->getSPS()->getMaxCUWidth(), pcSlice->getSPS()->getMaxCUHeight(), true);
+	  //g_pcYuvPred-> resample(pcSlice->getSPS()->getMaxCUWidth(), pcSlice->getSPS()->getMaxCUHeight() );
+
+  }
+#endif
+
   m_bFirstSliceInPicture = false;
   m_uiSliceIdx++;
 

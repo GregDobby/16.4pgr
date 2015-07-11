@@ -143,8 +143,6 @@ public:
 	}
 	const Pel*    getAddr(const ComponentID ch, const Int ctuRSAddr, const Int uiAbsZorderIdx) const
 	{
-		//int a = m_ctuOffsetInBuffer[ch == 0 ? 0 : 1][ctuRSAddr] + m_subCuOffsetInBuffer[ch == 0 ? 0 : 1][g_auiZscanToRaster[uiAbsZorderIdx]];
-		//cout << a << endl;
 		return m_piPicOrg[ch] + m_ctuOffsetInBuffer[ch == 0 ? 0 : 1][ctuRSAddr] + m_subCuOffsetInBuffer[ch == 0 ? 0 : 1][g_auiZscanToRaster[uiAbsZorderIdx]];
 	}
 

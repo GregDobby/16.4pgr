@@ -1,0 +1,42 @@
+﻿Build started 2015/6/14 0:59:54.
+     1>Project "F:\Tsinghua\Work\Projects\hm16.4-pgr\build\vc10\TLibCommon_vc10.vcxproj" on node 2 (Build target(s)).
+     1>ClCompile:
+         C:\Program Files (x86)\Microsoft Visual Studio 12.0\VC\bin\x86_amd64\CL.exe /c /I"F:\Tsinghua\Work\Projects\hm16.4-pgr\build\\..\source\Lib\\" /I"F:\Tsinghua\Work\Projects\hm16.4-pgr\build\\..\compat\msvc" /I"C:\Program Files (x86)\Visual Leak Detector\include" /Zi /nologo /W3 /WX- /Od /D WIN32 /D _DEBUG /D _LIB /D _CRT_SECURE_NO_WARNINGS /D _MBCS /Gm /EHsc /RTC1 /MTd /GS /fp:precise /Zc:wchar_t /Zc:forScope /Fo"F:\Tsinghua\Work\Projects\hm16.4-pgr\build\\vc10\x64\Debug\TLibCommon\\" /Fd"F:\Tsinghua\Work\Projects\hm16.4-pgr\build\\vc10\x64\Debug\TLibCommon\vc120.pdb" /Gd /TP /errorReport:prompt ..\..\source\Lib\TLibCommon\PixelPrediction.cpp
+         PixelPrediction.cpp
+     1>..\..\source\Lib\TLibCommon\PixelPrediction.cpp(1171): warning C4101: 'temp' : unreferenced local variable
+       Lib:
+         C:\Program Files (x86)\Microsoft Visual Studio 12.0\VC\bin\x86_amd64\Lib.exe /OUT:"F:\Tsinghua\Work\Projects\hm16.4-pgr\build\\vc10\x64\Debug\TLibCommon\TLibCommon.lib" /LIBPATH:"C:\Program Files (x86)\Visual Leak Detector\lib\Win64" /NOLOGO /MACHINE:X64 "F:\Tsinghua\Work\Projects\hm16.4-pgr\build\\vc10\x64\Debug\TLibCommon\libmd5.obj"
+         "F:\Tsinghua\Work\Projects\hm16.4-pgr\build\\vc10\x64\Debug\TLibCommon\ContextModel.obj"
+         "F:\Tsinghua\Work\Projects\hm16.4-pgr\build\\vc10\x64\Debug\TLibCommon\ContextModel3DBuffer.obj"
+         "F:\Tsinghua\Work\Projects\hm16.4-pgr\build\\vc10\x64\Debug\TLibCommon\Debug.obj"
+         "F:\Tsinghua\Work\Projects\hm16.4-pgr\build\\vc10\x64\Debug\TLibCommon\PixelPrediction.obj"
+         "F:\Tsinghua\Work\Projects\hm16.4-pgr\build\\vc10\x64\Debug\TLibCommon\SEI.obj"
+         "F:\Tsinghua\Work\Projects\hm16.4-pgr\build\\vc10\x64\Debug\TLibCommon\TComBitStream.obj"
+         "F:\Tsinghua\Work\Projects\hm16.4-pgr\build\\vc10\x64\Debug\TLibCommon\TComCABACTables.obj"
+         "F:\Tsinghua\Work\Projects\hm16.4-pgr\build\\vc10\x64\Debug\TLibCommon\TComChromaFormat.obj"
+         "F:\Tsinghua\Work\Projects\hm16.4-pgr\build\\vc10\x64\Debug\TLibCommon\TComDataCU.obj"
+         "F:\Tsinghua\Work\Projects\hm16.4-pgr\build\\vc10\x64\Debug\TLibCommon\TComHash.obj"
+         "F:\Tsinghua\Work\Projects\hm16.4-pgr\build\\vc10\x64\Debug\TLibCommon\TComInterpolationFilter.obj"
+         "F:\Tsinghua\Work\Projects\hm16.4-pgr\build\\vc10\x64\Debug\TLibCommon\TComLoopFilter.obj"
+         "F:\Tsinghua\Work\Projects\hm16.4-pgr\build\\vc10\x64\Debug\TLibCommon\TComMotionInfo.obj"
+         "F:\Tsinghua\Work\Projects\hm16.4-pgr\build\\vc10\x64\Debug\TLibCommon\TComPattern.obj"
+         "F:\Tsinghua\Work\Projects\hm16.4-pgr\build\\vc10\x64\Debug\TLibCommon\TComPic.obj"
+         "F:\Tsinghua\Work\Projects\hm16.4-pgr\build\\vc10\x64\Debug\TLibCommon\TComPicSym.obj"
+         "F:\Tsinghua\Work\Projects\hm16.4-pgr\build\\vc10\x64\Debug\TLibCommon\TComPicYuv.obj"
+         "F:\Tsinghua\Work\Projects\hm16.4-pgr\build\\vc10\x64\Debug\TLibCommon\TComPicYuvMD5.obj"
+         "F:\Tsinghua\Work\Projects\hm16.4-pgr\build\\vc10\x64\Debug\TLibCommon\TComPrediction.obj"
+         "F:\Tsinghua\Work\Projects\hm16.4-pgr\build\\vc10\x64\Debug\TLibCommon\TComRdCost.obj"
+         "F:\Tsinghua\Work\Projects\hm16.4-pgr\build\\vc10\x64\Debug\TLibCommon\TComRdCostWeightPrediction.obj"
+         "F:\Tsinghua\Work\Projects\hm16.4-pgr\build\\vc10\x64\Debug\TLibCommon\TComRom.obj"
+         "F:\Tsinghua\Work\Projects\hm16.4-pgr\build\\vc10\x64\Debug\TLibCommon\TComSampleAdaptiveOffset.obj"
+         "F:\Tsinghua\Work\Projects\hm16.4-pgr\build\\vc10\x64\Debug\TLibCommon\TComSlice.obj"
+         "F:\Tsinghua\Work\Projects\hm16.4-pgr\build\\vc10\x64\Debug\TLibCommon\TComTrQuant.obj"
+         "F:\Tsinghua\Work\Projects\hm16.4-pgr\build\\vc10\x64\Debug\TLibCommon\TComTU.obj"
+         "F:\Tsinghua\Work\Projects\hm16.4-pgr\build\\vc10\x64\Debug\TLibCommon\TComWeightPrediction.obj"
+         "F:\Tsinghua\Work\Projects\hm16.4-pgr\build\\vc10\x64\Debug\TLibCommon\TComYuv.obj"
+         TLibCommon_vc10.vcxproj -> F:\Tsinghua\Work\Projects\hm16.4-pgr\build\\vc10\x64\Debug\TLibCommon\TLibCommon.lib
+     1>Done Building Project "F:\Tsinghua\Work\Projects\hm16.4-pgr\build\vc10\TLibCommon_vc10.vcxproj" (Build target(s)).
+
+Build succeeded.
+
+Time Elapsed 00:00:01.19

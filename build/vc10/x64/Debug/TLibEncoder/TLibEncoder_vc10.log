@@ -1,0 +1,47 @@
+﻿Build started 2015/6/14 0:56:18.
+     1>Project "F:\Tsinghua\Work\Projects\hm16.4-pgr\build\vc10\TLibEncoder_vc10.vcxproj" on node 3 (Build target(s)).
+     1>ClCompile:
+         C:\Program Files (x86)\Microsoft Visual Studio 12.0\VC\bin\x86_amd64\CL.exe /c /I"F:\Tsinghua\Work\Projects\hm16.4-pgr\build\\..\source\Lib\\" /I"F:\Tsinghua\Work\Projects\hm16.4-pgr\build\\..\compat\msvc" /I"C:\Program Files (x86)\Visual Leak Detector\include" /Zi /nologo /W3 /WX- /Od /D WIN32 /D _DEBUG /D _LIB /D _CRT_SECURE_NO_WARNINGS /D _MBCS /Gm /EHsc /RTC1 /MTd /GS /fp:precise /Zc:wchar_t /Zc:forScope /Fo"F:\Tsinghua\Work\Projects\hm16.4-pgr\build\\vc10\x64\Debug\TLibEncoder\\" /Fd"F:\Tsinghua\Work\Projects\hm16.4-pgr\build\\vc10\x64\Debug\TLibEncoder\vc120.pdb" /Gd /TP /errorReport:prompt ..\..\source\Lib\TLibEncoder\SEIEncoder.cpp ..\..\source\Lib\TLibEncoder\TEncCavlc.cpp ..\..\source\Lib\TLibEncoder\TEncCu.cpp ..\..\source\Lib\TLibEncoder\TEncEntropy.cpp ..\..\source\Lib\TLibEncoder\TEncGOP.cpp ..\..\source\Lib\TLibEncoder\TEncPic.cpp ..\..\source\Lib\TLibEncoder\TEncPreanalyzer.cpp ..\..\source\Lib\TLibEncoder\TEncRateCtrl.cpp ..\..\source\Lib\TLibEncoder\TEncSampleAdaptiveOffset.cpp ..\..\source\Lib\TLibEncoder\TEncSbac.cpp ..\..\source\Lib\TLibEncoder\TEncSearch.cpp ..\..\source\Lib\TLibEncoder\TEncSlice.cpp ..\..\source\Lib\TLibEncoder\TEncTop.cpp ..\..\source\Lib\TLibEncoder\WeightPredAnalysis.cpp
+         WeightPredAnalysis.cpp
+         TEncTop.cpp
+         TEncSlice.cpp
+         TEncSearch.cpp
+         TEncSbac.cpp
+     1>..\..\source\Lib\TLibEncoder\TEncSbac.cpp(2028): warning C4101: 'Base' : unreferenced local variable
+     1>..\..\source\Lib\TLibEncoder\TEncSbac.cpp(2025): warning C4101: 'GroupID' : unreferenced local variable
+         TEncSampleAdaptiveOffset.cpp
+         TEncRateCtrl.cpp
+         TEncPreanalyzer.cpp
+         TEncPic.cpp
+         TEncGOP.cpp
+         TEncEntropy.cpp
+         TEncCu.cpp
+         TEncCavlc.cpp
+         SEIEncoder.cpp
+         Generating Code...
+       Lib:
+         C:\Program Files (x86)\Microsoft Visual Studio 12.0\VC\bin\x86_amd64\Lib.exe /OUT:"F:\Tsinghua\Work\Projects\hm16.4-pgr\build\\vc10\x64\Debug\TLibEncoder\TLibEncoder.lib" /LIBPATH:"C:\Program Files (x86)\Visual Leak Detector\lib\Win64" /NOLOGO /MACHINE:X64 "F:\Tsinghua\Work\Projects\hm16.4-pgr\build\\vc10\x64\Debug\TLibEncoder\NALwrite.obj"
+         "F:\Tsinghua\Work\Projects\hm16.4-pgr\build\\vc10\x64\Debug\TLibEncoder\SEIEncoder.obj"
+         "F:\Tsinghua\Work\Projects\hm16.4-pgr\build\\vc10\x64\Debug\TLibEncoder\SEIwrite.obj"
+         "F:\Tsinghua\Work\Projects\hm16.4-pgr\build\\vc10\x64\Debug\TLibEncoder\SyntaxElementWriter.obj"
+         "F:\Tsinghua\Work\Projects\hm16.4-pgr\build\\vc10\x64\Debug\TLibEncoder\TEncBinCoderCABAC.obj"
+         "F:\Tsinghua\Work\Projects\hm16.4-pgr\build\\vc10\x64\Debug\TLibEncoder\TEncBinCoderCABACCounter.obj"
+         "F:\Tsinghua\Work\Projects\hm16.4-pgr\build\\vc10\x64\Debug\TLibEncoder\TEncCavlc.obj"
+         "F:\Tsinghua\Work\Projects\hm16.4-pgr\build\\vc10\x64\Debug\TLibEncoder\TEncCu.obj"
+         "F:\Tsinghua\Work\Projects\hm16.4-pgr\build\\vc10\x64\Debug\TLibEncoder\TEncEntropy.obj"
+         "F:\Tsinghua\Work\Projects\hm16.4-pgr\build\\vc10\x64\Debug\TLibEncoder\TEncGOP.obj"
+         "F:\Tsinghua\Work\Projects\hm16.4-pgr\build\\vc10\x64\Debug\TLibEncoder\TEncPic.obj"
+         "F:\Tsinghua\Work\Projects\hm16.4-pgr\build\\vc10\x64\Debug\TLibEncoder\TEncPreanalyzer.obj"
+         "F:\Tsinghua\Work\Projects\hm16.4-pgr\build\\vc10\x64\Debug\TLibEncoder\TEncRateCtrl.obj"
+         "F:\Tsinghua\Work\Projects\hm16.4-pgr\build\\vc10\x64\Debug\TLibEncoder\TEncSampleAdaptiveOffset.obj"
+         "F:\Tsinghua\Work\Projects\hm16.4-pgr\build\\vc10\x64\Debug\TLibEncoder\TEncSbac.obj"
+         "F:\Tsinghua\Work\Projects\hm16.4-pgr\build\\vc10\x64\Debug\TLibEncoder\TEncSearch.obj"
+         "F:\Tsinghua\Work\Projects\hm16.4-pgr\build\\vc10\x64\Debug\TLibEncoder\TEncSlice.obj"
+         "F:\Tsinghua\Work\Projects\hm16.4-pgr\build\\vc10\x64\Debug\TLibEncoder\TEncTop.obj"
+         "F:\Tsinghua\Work\Projects\hm16.4-pgr\build\\vc10\x64\Debug\TLibEncoder\WeightPredAnalysis.obj"
+         TLibEncoder_vc10.vcxproj -> F:\Tsinghua\Work\Projects\hm16.4-pgr\build\\vc10\x64\Debug\TLibEncoder\TLibEncoder.lib
+     1>Done Building Project "F:\Tsinghua\Work\Projects\hm16.4-pgr\build\vc10\TLibEncoder_vc10.vcxproj" (Build target(s)).
+
+Build succeeded.
+
+Time Elapsed 00:00:15.45

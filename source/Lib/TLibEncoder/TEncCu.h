@@ -81,16 +81,17 @@ private:
 	TComYuv**               m_ppcRecoYuvBest; ///< Best Reconstruction Yuv for each depth
 	TComYuv**               m_ppcPredYuvTemp; ///< Temporary Prediction Yuv for each depth
 	TComYuv**               m_ppcResiYuvTemp; ///< Temporary Residual Yuv for each depth
+#if PGR_ENABLE
+    TComYuv**               m_ppcAbnormalResiYuvTemp; ///< Temporary  abnormatl Residual Yuv for each depth
+#endif
 	TComYuv**               m_ppcRecoYuvTemp; ///< Temporary Reconstruction Yuv for each depth
 	TComYuv**               m_ppcOrigYuv;     ///< Original Yuv for each depth
 	TComYuv**               m_ppcNoCorrYuv;
 
 #if PGR_ENABLE
-	//TComPicYuv*				m_pcPreYuvPGR;	  ///< prediction yuv using pgr method
-	//TComPicYuv*				m_pcRecoYuvPGR;   ///< reconstruction yuv using pgr method
-	//TComPicYuv*				m_pcResiYuvPGR;	  ///< residue yuv using pgr method
 	// ---- Template Match ----
 	Pixel*					m_pPixel[MAX_NUM_COMPONENT];						///< pixel data
+	
 #endif
 
 	//  Data : encoder control
@@ -122,13 +123,10 @@ public:
 		);
 #if PGR_ENABLE
 	// create pgr buffers
-	Void  createPGR(UInt uiPicWidth, UInt uiPicHeight, ChromaFormat chromaFormat);
+	Void  createPGR(UInt uiPicWidth, UInt uiPicHeight, ChromaFormat chromaFormat, UInt uiMaxCuWidth, UInt uiMaxCuHeight, UInt uiTotalCuDepth);
 
 	// init estimation data
 	Void  initEstPGR(TComPic* pcPic);
-
-	// update pixels after compressing
-	//	Void updatePixelAfterCompressing(TComDataCU* pCtu);
 #endif
 
 	/// destroy internal buffers
@@ -142,6 +140,8 @@ public:
 
 	Int   updateCtuDataISlice(TComDataCU* pCtu, Int width, Int height);
 
+	Pixel** getPixel(){ return m_pPixel; };
+
 protected:
 	Void  finishCU(TComDataCU*  pcCU, UInt uiAbsPartIdx, UInt uiDepth);
 #if AMP_ENC_SPEEDUP
@@ -150,11 +150,9 @@ protected:
 #if PGR_ENABLE
 	Void  xCompressCUPGR(TComDataCU*& rpcBestCU, TComDataCU*& rpcTempCU, UInt uiDepth); // UInt uiDepth DEBUG_STRING_FN_DECLARE(sDebug), PartSize eParentPartSize = NUMBER_OF_PART_SIZES);
 
-	//	Void  preDefaultMethod(TComDataCU*& rpcTempCU);		// to predict every pixel in the given CU using default method which is  predicted in the process before
+	Void  reviseAnomalyResidue(TComDataCU*& rpcTempCU,TComYuv*& pcOrgYuv, TComYuv*& pcPreYuv, TComYuv*& pcResiYuv, TComYuv*& pcAnYuv, UInt uiResidueThreshold);
 
-	Void  reviseAnomalyResidue(TComDataCU*& rpcTempCU, UInt uiResidueThreshold);
-
-	Void  xCheckPRGResidue(TComDataCU*& rpcBestCU, TComDataCU*& rpcTempCU);
+	Void  xCheckPRGResidue(TComDataCU*& rpcBestCU, TComDataCU*& rpcTempCU,UInt qp, Bool bTransquantBypass);
 #endif
 
 #else

@@ -99,7 +99,7 @@ Void TEncTop::create ()
 
 #if PGR_ENABLE
   initCoordinateMap(getSourceWidth(), getSourceHeight(), m_maxCUWidth, m_maxCUHeight, m_chromaFormatIDC);
-  m_cCuEncoder.			createPGR(getSourceWidth(), getSourceHeight(), m_chromaFormatIDC);
+  m_cCuEncoder.createPGR(getSourceWidth(), getSourceHeight(), m_chromaFormatIDC, m_maxCUWidth, m_maxCUHeight, m_maxTotalCUDepth);
 #endif
 
 

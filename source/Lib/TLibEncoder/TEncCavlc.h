@@ -87,7 +87,12 @@ public:
   Void  codeTilesWPPEntryPoint( TComSlice* pSlice );
   Void  codeTerminatingBit      ( UInt uilsLast );
   Void  codeSliceFinish         ();
-
+#if PGR_ENABLE
+   Void codePaletteIndex(TComDataCU* pcCU, UInt uiAbsPartIdx, UInt uiDepth);
+   Void codePosition(TComDataCU* pcCU, UInt uiAbsPartIdx, UInt uiDepth );
+   Void codeRevision(TComDataCU* pcCU, UInt uiAbsPartIdx, UInt uiDepth);
+   Void codePalette(Palette ppPalette);
+#endif
   Void codeMVPIdx ( TComDataCU* pcCU, UInt uiAbsPartIdx, RefPicList eRefList );
   Void codeSAOBlkParam(SAOBlkParam& saoBlkParam, const BitDepths &bitDepths, Bool* sliceEnabled, Bool leftMergeAvail, Bool aboveMergeAvail, Bool onlyEstMergeInfo = false){printf("only supported in CABAC"); assert(0); exit(-1);}
   Void codeCUTransquantBypassFlag( TComDataCU* pcCU, UInt uiAbsPartIdx );

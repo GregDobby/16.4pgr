@@ -108,7 +108,10 @@ public:
   Void parseIntraDirLumaAng ( TComDataCU* pcCU, UInt uiAbsPartIdx, UInt uiDepth );
 
   Void parseIntraDirChroma  ( TComDataCU* pcCU, UInt uiAbsPartIdx, UInt uiDepth );
-
+#if PGR_ENABLE
+  Void parseRevision(TComDataCU* pcCU, UInt uiAbsPartIdx, UInt uiDepth);
+  Void parsePalette(Palette& ppPalette);
+#endif
 #if !SCM_T0227_INTRABC_SIG_UNIFICATION
   Void parseIntraBCFlag     ( TComDataCU* pcCU, UInt uiAbsPartIdx, UInt uiPartIdx, UInt uiDepth );
   Void parseIntraBC         ( TComDataCU* pcCU, UInt uiAbsPartIdx, UInt uiPartIdx, UInt uiDepth );

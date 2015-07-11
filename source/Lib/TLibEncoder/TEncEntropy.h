@@ -74,7 +74,12 @@ public:
   virtual Void  codeTerminatingBit      ( UInt uilsLast )                                       = 0;
   virtual Void  codeSliceFinish         ()                                                      = 0;
   virtual Void  codeMVPIdx ( TComDataCU* pcCU, UInt uiAbsPartIdx, RefPicList eRefList ) = 0;
-
+#if PGR_ENABLE
+   virtual Void codePaletteIndex(TComDataCU* pcCU, UInt uiAbsPartIdx, UInt uiDepth)=0;
+   virtual Void codePosition(TComDataCU* pcCU, UInt uiAbsPartIdx, UInt uiDepth) = 0;
+   virtual Void codeRevision(TComDataCU* pcCU, UInt uiAbsPartIdx, UInt uiDepth) = 0;
+   virtual Void codePalette(Palette ppPalette) = 0;
+#endif
 public:
   virtual Void codeCUTransquantBypassFlag( TComDataCU* pcCU, UInt uiAbsPartIdx ) = 0;
   virtual Void codePLTModeFlag          ( TComDataCU* pcCU, UInt uiAbsPartIdx ) = 0;
@@ -188,6 +193,14 @@ public:
 #endif
 
   Void encodeCrossComponentPrediction( TComTU &rTu, ComponentID compID );
+
+#if PGR_ENABLE
+  Void encodePGRFlag();
+  Void encodePaletteIndex(TComDataCU* pcCU, UInt uiAbsPartIdx, UInt uiDepth);
+  Void encodePosition(TComDataCU* pcCU, UInt uiAbsPartIdx, UInt uiDepth );
+  Void encodeRevison(TComDataCU* pcCU, UInt uiAbsPartIdx, UInt uiDepth);
+  Void encodePalette(Palette ppPalette);
+#endif
 
 private:
   Void xEncodeTransform        ( Bool& bCodeDQP, Bool& codeChromaQpAdj, TComTU &rTu );

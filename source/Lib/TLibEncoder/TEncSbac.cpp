@@ -388,6 +388,27 @@ Void TEncSbac::xWriteEpExGolomb( UInt uiSymbol, UInt uiCount )
   m_pcBinIf->encodeBinsEP( bins, numBins );
 }
 
+#if PGR_ENABLE
+Void TEncSbac::xWriteEPExpGolombK0(UInt uiSymbol)
+{
+	UInt uiTmp = uiSymbol + 1;
+	UInt uiNumBins = 0;
+	while (uiTmp > 0)
+	{
+		uiTmp = uiTmp >> 1;
+		uiNumBins++;
+	}
+
+	m_pcBinIf->encodeBinsEP(uiSymbol + 1, uiNumBins);
+}
+Void TEncSbac::xWriteEPEXPGolombK(UInt uiSymbol, UInt uiK)
+{
+	UInt uiTmp = uiSymbol - 1 + (1 << uiK);
+	xWriteEPExpGolombK0(uiTmp);
+}
+#endif
+
+
 Void TEncSbac::xWriteTruncBinCode(UInt uiSymbol, UInt uiMaxSymbol)
 {
   UInt uiThresh;
@@ -1953,7 +1974,552 @@ Void TEncSbac::codeLastSignificantXY( UInt uiPosX, UInt uiPosY, Int width, Int h
     }
   }
 }
+#if PGR_ENABLE
+Void TEncSbac::codePaletteIndex(TComDataCU* pcCU, UInt uiAbsPartIdx, UInt uiDepth)
+{
+    UInt uiNumValidComponents = pcCU->getPic()->getNumberValidComponents();
+    TCoeff buffer[MAX_BUFFER] ;
+    UInt pos;
+    UInt   uiSymbol;
+	for (UInt ch = 0; ch < uiNumValidComponents; ch++)
+    {
+        ComponentID comp = ComponentID( ch ) ;
+        Int  iNum =  pcCU->getPaletteIndexNum()[comp];
+        Int  *piIndex = pcCU->getPaletteIndex(comp);
+        pos = 0;
+        ::ExpGolombEncode(iNum,buffer,pos);
+        for(Int i=0 ; i< iNum; i++)
+        {
+            ::ExpGolombEncode(piIndex[i],buffer,pos);
+        }
+		UInt n = 0;
+        while ( n< (pos) )
+        {
+            uiSymbol =ReadBit(buffer,n);
+            m_pcBinIf->encodeBinEP(uiSymbol);               
+        }
+    }
+}
+Void TEncSbac::codePosition(TComDataCU* pcCU, UInt uiAbsPartIdx, UInt uiDepth )
+{
 
+    UInt   uiSymbol;
+    UInt   uiBitsLength;
+    
+    UInt  uiCUAddr = pcCU->getCtuRsAddr() ;
+    UInt  uiFrameWidthInCU =  pcCU->getPic()->getFrameWidthInCtus() ;
+    UInt  uiCUAboveAddr = uiCUAddr - uiFrameWidthInCU;
+    UInt  uiCULeftAddr = uiCUAddr - 1 ;
+    UInt  uiCUAboveLeftAddr   = uiCUAddr -1 - uiFrameWidthInCU;
+    UInt  uiCUAboveRightAddr = uiCUAddr +1 - uiFrameWidthInCU;
+    UInt  uiCUArray[4] = {uiCULeftAddr,uiCUAboveAddr,uiCUAboveLeftAddr,uiCUAboveRightAddr};
+    UInt  uiCUHandleAddr ; 
+    const ChromaFormat chFmt = pcCU->getPic()->getChromaFormat();   
+
+     UInt n; 
+     UInt start;
+     int GroupID,index;
+     int  iBuffer[MAX_BUFFER*2];
+     bool  bEnd ;
+     int Base , Index ;   
+     UInt uiNumValidComponents = pcCU->getPic()->getNumberValidComponents();
+     const UInt  uiZOrder      = pcCU->getZorderIdxInCtu() +uiAbsPartIdx;
+     TComPicYuv* pcPicYuv  = pcCU->getPic()->getPicYuvResi();
+     UInt  CUPelX,CUPelY;
+     CUPelX= pcCU->getCUPelX() +   g_auiRasterToPelX[ g_auiZscanToRaster[uiAbsPartIdx] ];
+     CUPelY= pcCU->getCUPelY() +   g_auiRasterToPelY[ g_auiZscanToRaster[uiAbsPartIdx] ]; 
+     UInt uiHeight = pcCU->getHeight(uiAbsPartIdx);
+     UInt uiWidth  = pcCU->getWidth  (uiAbsPartIdx);
+	for (UInt ch = 0; ch < uiNumValidComponents; ch++)
+     {
+          ComponentID compID = ComponentID(ch);          
+          TCoeff* pcCoef = pcCU->getPRBits(compID);
+           const UInt  uiResiStride   = pcPicYuv->getStride( compID); 
+
+
+            //cout<<compID<<" "<<CUPelX<<" "<<CUPelY<<" "<<uiAbsPartIdx<<" "<<uiWidth<<" "<<uiHeight<<endl;
+            //Pel*  piDes         = pcPicYuv->getAddr(compID) +CUPelY * uiResiStride + CUPelX;
+            Pel* piDes        = pcPicYuv->getAddr(compID,uiCUAddr, pcCU->getZorderIdxInCtu() +uiAbsPartIdx);
+            Pel*  pDes = piDes ;            
+            UInt  uiPRMode = 2;//pcCU->getPRMode(uiAbsPartIdx,compID);
+            for( UInt uiY = 0; uiY < uiHeight; uiY++  )
+            {
+              memset(pDes,0,sizeof(Pel)*uiWidth);
+              pDes += uiResiStride;
+            }
+            UInt dstindex;int num;
+            bool  vlcf[3] = {false,false,false};// dx & dy   residual  srcindex
+            //bool  bMostValue = pcCU->getPaletteFlag(uiAbsPartIdx,compID);//false;
+            start = 0 ;
+            //if(bMostValue )  prnumposresi[compID][4]++;
+            
+#if     INTRA_PALETTE_FLAG
+            m_pcBinIf->encodeBinEP(bMostValue);
+#endif
+            switch( uiPRMode )
+            {
+            case 1:
+                m_pcBinIf->encodeBinEP(0);
+                m_pcBinIf->encodeBinEP(0);
+                break;
+            case 2:
+                m_pcBinIf->encodeBinEP(0);
+                m_pcBinIf->encodeBinEP(1);
+                break;
+            case 3:
+                m_pcBinIf->encodeBinEP(1);
+                m_pcBinIf->encodeBinEP(0);
+                break;
+            case 4:                
+                m_pcBinIf->encodeBinEP(1);
+                m_pcBinIf->encodeBinEP(1);
+                break;
+            }
+            switch( uiPRMode )
+             {
+                
+                 case 4:
+                    TComYuv  *pcTempA;
+                    pcTempA= new TComYuv;
+                    pcTempA->create( uiWidth , uiHeight, chFmt) ;
+                    UInt    uiAStride;
+                    uiAStride = pcTempA->getStride (compID);
+                    {     
+                            for(UInt  index =0 ; index< 4; index++)
+                            {
+                                 if( (int) uiCUArray[index]<0) continue; 
+                                 {
+                                     uiCUHandleAddr = uiCUArray[index] ;
+                                     //UInt uiCUPelX,uiCUPelY;
+                                     //uiCUPelX           = ( uiCUHandleAddr % pcCU->getPic()->getFrameWidthInCU() ) * g_uiMaxCUWidth;
+                                     //uiCUPelY           = ( uiCUHandleAddr /   pcCU->getPic()->getFrameWidthInCU() ) * g_uiMaxCUHeight;
+                                     //uiCUPelX= uiCUPelX +  g_auiRasterToPelX[ g_auiZscanToRaster[uiAbsPartIdx] ];
+                                     //uiCUPelY= uiCUPelY +  g_auiRasterToPelY[ g_auiZscanToRaster[uiAbsPartIdx] ];             
+             
+                                     //Pel *pHandleResi = pcPicYuv->getAddr(compID) + uiCUPelY * uiResiStride + uiCUPelX;
+                                     Pel* pHandleResi = pcPicYuv->getAddr(compID,uiCUHandleAddr,uiAbsPartIdx + pcCU->getZorderIdxInCtu());
+                                     Pel  *pADest =  pcTempA->getAddr(compID);
+                                    for (Int y =  0; y < uiHeight; y++ )
+                                    {
+                                        for(Int x=0;x < uiWidth ; x++)
+                                        {
+                                            pADest[x] = pHandleResi[x] ;                    
+                                        }
+                                        pADest += uiAStride;
+                                        pHandleResi   += uiResiStride;                
+                                   }
+                                 }
+                            }
+                    } 
+                    
+                    
+                    num = 0;
+                    for (UInt y=0; y<uiHeight; y++) 
+                    {
+                            for (UInt x=0; x<uiWidth; x++) 
+                            {
+                                if( *(pcTempA->getAddr(compID)+y*uiAStride+x) )
+                                {                              
+                                       
+                                        Index = ExpGolombDecode( pcCoef, start) ;
+                                        assert(Index>=-1 && Index < INTRA_PR_PALETTE_NUM);
+                                       
+                                       *( piDes +(y) * uiResiStride+(x) ) =  1;
+                                   
+                                    //cout<<x << " "<<y<<" "<<*(pcTempA->getAddr(compID)+y*uiAStride+x) <<" "<<*( piDes +(y) * uiResiStride+(x)  )<<endl;
+                                    num++;
+                                }                            
+		                    } 
+                     
+	                }
+
+                    pcTempA->destroy();
+                    delete pcTempA;
+                    pcTempA = NULL ;
+
+                 case 2:
+
+                    memset( iBuffer, -1, MAX_BUFFER*2*sizeof(int) );
+                    
+                    index = 0 ;   bEnd = false ;
+                    {
+						Index =  ExpGolombDecode(pcCoef, start);
+						//assert(Index == (pcCU->getPaletteIndexNum(compID))[compID]);
+                        for(int i=0;i<Index;i++) {
+                            uiBitsLength = start;
+                            iBuffer[i*2    ] =  ExpGolombDecode( pcCoef, start); 
+                            iBuffer[i*2+1] =  ExpGolombDecode( pcCoef, start); 
+                            index += 2;
+                        }
+
+                    }
+                    uiBitsLength = start ;
+                    n = 0;
+                    while ( n< (uiBitsLength)  )
+                    {
+                        uiSymbol =ReadBit(pcCoef,n);
+                        m_pcBinIf->encodeBinEP(uiSymbol);               
+                    }
+
+                    {
+                        assert( (index % 2)==0 );
+            
+                        for(n = 2; n< index; n = n +2)
+                        {
+                            iBuffer[n] += iBuffer[n-2];
+                            iBuffer[n+1] += iBuffer[n-1];
+                        }
+
+
+                       for( n=0; n<index; n= n+4) 
+                        {                    
+                            int dx   = iBuffer[n] ;
+                            int dy   = iBuffer[n+1] ;
+
+                            assert( dx< uiWidth );
+                            assert( dy< uiHeight ) ;
+
+                             * ( piDes + dy * uiResiStride + dx ) = 1;
+                         }
+                    } 
+
+                    break;
+               case 3:                   
+                   
+                   Int  iValue, iLength, iValue1;
+                   int  indexlist[64*64][4],indexlist2[64*64];
+                   memset(indexlist  ,0,4*64*64*sizeof(int));
+                   memset(indexlist2,0,   64*64*sizeof(int));
+
+                   Index =  ExpGolombDecode( pcCoef, start) ;
+                   assert(Index>=0&& Index <4);
+                   uiCUHandleAddr = uiCUArray[ Index] ;
+                   assert( (int) uiCUHandleAddr>=0) ;
+
+                   vlcf[2] = ExpGolombDecode( pcCoef, start) ;
+                   uiBitsLength = start;
+                   dstindex=0;
+                   do{
+                           indexlist2[dstindex] = ExpGolombDecode( pcCoef, start) ;
+                           dstindex++;
+                    }while(indexlist2[dstindex-1]!= -1);
+                   dstindex--;
+                    
+                   assert(dstindex);
+                    if( !vlcf[2]){ 
+                       for(UInt x=0;x<dstindex;x++)
+                       {
+                           indexlist[x][3] = indexlist2[x];
+                       }                   
+                     } else {
+                       n = 0 ;
+                       for(UInt x=0;x<dstindex;x+=2)
+                       {
+                           iLength = indexlist2[x];
+                           assert( iLength>=0);
+                           iValue  = indexlist2[x+1] ;
+                           for(UInt y=0; y< iLength +1; y++)
+                           {
+                               indexlist[n][3] =  iValue ;
+                               n++;
+                           }
+                       }
+                       dstindex = n;
+                     }
+                   vlcf[1] =  ExpGolombDecode( pcCoef, start) ;
+                   uiBitsLength = start;
+                   if( !vlcf[1])
+                   { 
+                       for(UInt x=0;x<dstindex;x++)
+                       {
+                           uiBitsLength = start ;
+                           indexlist[x][2] = ExpGolombDecode( pcCoef, start) ;
+                            {
+   
+#if LOSSY
+                               Base = DQLossyValue(Base);
+#endif
+                               indexlist[x][2] = -1;
+                              //just for position informatin reuse.
+                               if( indexlist[x][2]==0 )indexlist[x][2] = -1;
+                               
+
+                           } 
+                       }                   
+                   }
+                   else
+                   {
+                       n=0;
+                       do
+                       {
+                           iLength = ExpGolombDecode( pcCoef, start);
+                           assert( (int) iLength >=0);
+                           
+                           iValue  =  ExpGolombDecode( pcCoef, start);
+                            {
+                               
+                                   iValue = -1;
+                           }                       
+
+                           for(UInt y=0; y< iLength+1; y++)
+                           {
+                               indexlist[n][2] = iValue ;
+                               n++;
+                           }
+                       } while(n < dstindex );
+                   }
+                    
+                   vlcf[0] =  ExpGolombDecode( pcCoef, start) ;
+                    uiBitsLength = start;
+                   if( !vlcf[0])
+                   { 
+                       for(UInt x=0;x<dstindex;x++)
+                       {
+                           indexlist[x][0] = ExpGolombDecode( pcCoef, start) ;
+                           indexlist[x][1] = ExpGolombDecode( pcCoef, start) ;
+                       }                   
+                   }
+                   else
+                    {
+                       n=0;
+                       do
+                       {
+                           iLength = ExpGolombDecode( pcCoef, start);
+                           assert( (int) iLength >=0);
+                           iValue  =  ExpGolombDecode( pcCoef, start);
+                           iValue1  =  ExpGolombDecode( pcCoef, start);
+                           for(UInt y=0; y< iLength+1; y++)
+                           {
+                               indexlist[n][0] = iValue ;
+                               indexlist[n][1] = iValue1 ;
+                               n++;
+                           }
+                       } while(n < dstindex );
+                     }
+                  
+                   for(UInt x=1;x<dstindex;x++) {
+              //        indexlist[x][2] += indexlist[x-1][2] ;
+                        indexlist[x][3] += indexlist[x-1][3] ;
+                    }
+                   
+                   //reconstrction residual data
+                   {
+                        TComYuv  *pcTemp;
+                        pcTemp =  new TComYuv;
+                        //UInt  uiSrc1Stride = g_pcPicYuvResi->getStride(compID);
+                        //CUPelX           = ( uiCUHandleAddr % pcCU->getPic()->getFrameWidthInCU() ) * g_uiMaxCUWidth;
+                        //CUPelY           = ( uiCUHandleAddr /   pcCU->getPic()->getFrameWidthInCU() ) * g_uiMaxCUHeight;
+                        //CUPelX= CUPelX +  g_auiRasterToPelX[ g_auiZscanToRaster[uiAbsPartIdx] ];
+                        //CUPelY= CUPelY +  g_auiRasterToPelY[ g_auiZscanToRaster[uiAbsPartIdx] ];
+                        //
+                        // 
+                        // Pel *pSrc1 = pcPicYuv->getAddr(compID) +CUPelY * uiSrc1Stride + CUPelX;
+                         Pel *pHandleCUSrc = pcPicYuv->getAddr(compID,uiCUHandleAddr, uiAbsPartIdx + pcCU->getZorderIdxInCtu());
+                         //if(compID != COMPONENT_Y) pHandleCUSrc = pcPicYuv->getAddr(COMPONENT_Y,uiCUHandleAddr, uiAbsPartIdx + pcCU->getZorderIdxInCU());
+                         pcTemp->create(uiWidth,uiHeight,chFmt);
+                         UInt  uiTempStride = pcTemp->getStride(compID);
+                         
+                         Pel  *pTemp =  pcTemp->getAddr(compID);
+                        for (Int y =  0; y < uiHeight; y++ )
+                        {
+                            for(Int x=0;x < uiWidth ; x++)
+                            {
+                                pTemp[x] = pHandleCUSrc[x] ;                    
+                            }
+                            pTemp += uiTempStride;
+                            pHandleCUSrc += uiResiStride;                
+                        }
+		                int srclx = 0; int srcly = 0; int srclv = 0;
+		                int srchasleft = 1;
+                        Pel  srcpel;
+                        int  srclist[3][64*64];
+                        int  srcindex = 0 ;
+                        memset(srclist,-1,3*64*64*sizeof(int));
+                        int cursrclistindex = 0;
+                        const UInt    uiSrcStride = pcTemp->getStride (compID);
+                        Pel*  piSrc     = pcTemp->getAddr(compID);
+                        //Pel*  piSrc     = pcTemp->getAddr(compID, uiAbsPartIdx);
+                        Pel*  pSrc      = piSrc ;
+                        //found the source list
+                        while (srchasleft) {
+			                int ndis = 1000;
+			                int nx = -1; int ny = -1;
+                            pSrc = piSrc ;
+			                for (UInt y=0; y<uiHeight; y++) {
+				                for (UInt x=0; x<uiWidth; x++) {
+                                    assert( pSrc[x] >-256 && pSrc[x]<256);
+					                if (pSrc[x]!=0) {
+						                int dis = 0;
+						                dis+=getG0Bits( (x-srclx));
+						                dis+=getG0Bits( (y-srcly));
+						                if (dis < ndis) {
+							                nx = x;
+							                ny = y;
+                                            ndis = dis ;
+						                }
+					                }
+				                }
+                                pSrc += uiSrcStride;
+			                }
+                           if(nx!=-1 && ny!=-1) {
+                                srcpel =  *(piSrc +ny*uiSrcStride+nx) ;	 
+				                srclx = nx; srcly = ny; srclv = srcpel;
+                                srclist[0][srcindex] = srclx ;
+                                srclist[1][srcindex] = srcly ;
+                                srclist[2][srcindex] = srcpel;
+                                srcindex++;
+			                    *(piSrc +ny*uiSrcStride+nx) =0;
+                        }else {
+                                srchasleft = 0;
+                            }
+                    }
+                        pcTemp->destroy();
+                        delete pcTemp;
+                        pcTemp = NULL;
+                    
+                        for(UInt x=0;x<dstindex;x++)
+                        {
+                            Int  srclistindex = indexlist[x][3];
+                            assert(srclistindex< srcindex);
+                            Int  dy = indexlist[x][1]+srclist[1][srclistindex] ;
+                            Int  dx = indexlist[x][0]+srclist[0][srclistindex] ;
+                            assert(dy >=0 && dx >=0);
+                            assert(indexlist[x][2] >-256 && indexlist[x][2] < 256);
+                            
+                            {
+                                *( piDes +(dy)*uiResiStride+(dx) ) = indexlist[x][2] ;
+                            }
+                            
+                        }
+                   }
+                   //write to bitstream
+                   uiBitsLength = start ;
+                   n = 0;
+                   while ( n< (uiBitsLength)  )
+                   {
+                        uiSymbol =ReadBit(pcCoef,n);
+                        m_pcBinIf->encodeBinEP(uiSymbol);               
+                   }
+                   break;
+
+               default:
+                   assert(false);
+                   break;
+               }
+          }
+    
+    }
+
+Void TEncSbac::codeRevision(TComDataCU* pcCU, UInt uiAbsPartIdx, UInt uiDepth)
+{
+	UInt uiNumValidComponents = pcCU->getPic()->getNumberValidComponents();
+	// shortest path
+	UInt uiWidth = pcCU->getSlice()->getSPS()->getMaxCUWidth() >> uiDepth;
+	UInt uiHeight = pcCU->getSlice()->getSPS()->getMaxCUWidth() >> uiDepth;
+
+	TComYuv* pAbnormalResi = new TComYuv;
+	pAbnormalResi->create(uiWidth, uiHeight, pcCU->getPic()->getChromaFormat());
+	pAbnormalResi->copyFromPicYuv(g_pcYuvAbnormalResi, pcCU->getCtuRsAddr(), pcCU->getZorderIdxInCtu() + uiAbsPartIdx);
+
+	// buffers
+	TCoeff pcPosBuffer[4096 * 2];
+	UInt puiIdxBuffer[4096];
+	UInt uiNumIdx;
+	TCoeff pcPosBitsBuf[4096 * 2];
+	TCoeff pcIdxBitsBuf [4096];
+
+	//fstream fpos, fidx;
+
+	for (UInt ch = 0; ch < uiNumValidComponents; ch++)
+	{
+		//char tmp[64];
+		//sprintf(tmp, "pos_%d.txt", ch);
+		//fpos.open(tmp, ios::app);
+		//sprintf(tmp, "idx_%d.txt", ch);
+		//fidx.open(tmp, ios::app);
+
+		ComponentID cId = ComponentID(ch);
+		// shortest path
+		PositionCode_PathLeast(pAbnormalResi, cId, pcPosBuffer,puiIdxBuffer,uiNumIdx);
+		// code
+		// expgolomb
+		UInt uiPosCur = 0;
+		UInt uiIdxCur = 0;
+		UInt uiRunLength = 1;
+		UInt uiIdx = puiIdxBuffer[0];
+		ExpGolombEncode(uiNumIdx, pcPosBitsBuf, uiPosCur);
+		for (UInt i = 0; i < uiNumIdx; i++)
+		{
+			// position
+			int x = pcPosBuffer[2 * i];
+			int y = pcPosBuffer[2 * i + 1];
+
+			//fpos << x << "\t" << y << endl;
+
+			ExpGolombEncode(x, pcPosBitsBuf, uiPosCur);
+			ExpGolombEncode(y, pcPosBitsBuf, uiPosCur);
+			// index runlength
+			if (i + 1 < uiNumIdx && puiIdxBuffer[i] == puiIdxBuffer[i + 1])
+			{
+				uiRunLength++;
+			}
+			else
+			{
+				ExpGolombEncode(uiRunLength, pcIdxBitsBuf, uiIdxCur);
+				ExpGolombEncode(uiIdx, pcIdxBitsBuf, uiIdxCur);
+				//fidx << uiRunLength << "\t" << uiIdx << endl;
+				uiIdx = puiIdxBuffer[i + 1];
+				uiRunLength = 1;
+			}
+		}
+		
+		// encode position
+		Int uiSymbol;
+		UInt uiBitsLength = uiPosCur;
+		uiPosCur = 0;
+		while (uiPosCur < uiBitsLength)
+		{
+			uiSymbol = ReadBit(pcPosBitsBuf, uiPosCur);
+			m_pcBinIf->encodeBinEP(uiSymbol);
+		}
+
+		// encode index
+		uiBitsLength = uiIdxCur;
+		uiIdxCur = 0;
+		while (uiIdxCur < uiBitsLength)
+		{
+			uiSymbol = ReadBit(pcIdxBitsBuf, uiIdxCur);
+			m_pcBinIf->encodeBinEP(uiSymbol);
+		}
+		//fpos.close();
+		//fidx.close();
+	}
+
+	if (pAbnormalResi)
+	{
+		delete pAbnormalResi;
+		pAbnormalResi = NULL;
+	}
+
+}
+
+Void TEncSbac::codePalette(Palette ppPalette)
+{
+	TCoeff buffer[1024];
+	UInt uiCur = 0;
+	ExpGolombEncode(ppPalette.m_uiSize, buffer, uiCur);
+	for (UInt i = 0; i < ppPalette.m_uiSize; i++)
+		ExpGolombEncode(ppPalette.m_pEntry[i], buffer, uiCur);
+	UInt uiBitsLength = uiCur;
+	uiCur = 0;
+	UInt uiSymbol;
+	while (uiCur < uiBitsLength)
+	{
+		uiSymbol = ReadBit(buffer, uiCur);
+		m_pcBinIf->encodeBinEP(uiSymbol);
+	}
+}
+#endif
 
 Void TEncSbac::codeCoeffNxN( TComTU &rTu, TCoeff* pcCoef, const ComponentID compID )
 {

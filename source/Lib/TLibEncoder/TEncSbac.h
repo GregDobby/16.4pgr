@@ -97,7 +97,12 @@ public:
   Void  codeSaoTypeIdx       ( UInt  uiCode);
   Void  codeSaoUflc          ( UInt uiLength, UInt  uiCode );
   Void  codeSAOSign          ( UInt  uiCode);  //<! code SAO offset sign
-
+#if PGR_ENABLE
+   Void codePaletteIndex(TComDataCU* pcCU, UInt uiAbsPartIdx, UInt uiDepth);
+   Void codePosition(TComDataCU* pcCU, UInt uiAbsPartIdx, UInt uiDepth );
+   Void codeRevision(TComDataCU* pcCU , UInt uiAbsPartIdx, UInt uiDepth);
+   Void codePalette(Palette ppPalette);
+#endif
   Void codeSAOOffsetParam(ComponentID compIdx, SAOOffset& ctbParam, Bool sliceEnabled, const Int channelBitDepth);
   Void codeSAOBlkParam(SAOBlkParam& saoBlkParam, const BitDepths &bitDepths
                     , Bool* sliceEnabled
@@ -117,6 +122,11 @@ private:
   Void codeScanRotationModeFlag ( TComDataCU* pcCU, UInt uiAbsPartIdx );
   Void  xWriteEpExGolomb     ( UInt uiSymbol, UInt uiCount );
   Void  xWriteCoefRemainExGolomb ( UInt symbol, UInt &rParam, const Bool useLimitedPrefixLength, const Int maxLog2TrDynamicRange );
+
+#if PGR_ENABLE
+  Void xWriteEPExpGolombK0(UInt uiSymbol);
+  Void xWriteEPEXPGolombK(UInt uiSymbol, UInt uiK);
+#endif
 
   Void  xCopyFrom            ( const TEncSbac* pSrc );
   Void  xCopyContextsFrom    ( const TEncSbac* pSrc );

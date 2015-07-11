@@ -90,7 +90,8 @@ TComDataCU::TComDataCU()
 		m_piLastPLTInLcuFinal[comp] = NULL;
 		m_piEscapeFlag[comp] = NULL;
 #if PGR_ENABLE
-        m_CtuPalette[comp] = NULL ;
+       
+        m_pcPRBits[comp] = NULL ;
 #endif
 	}
 #if ADAPTIVE_QP_SELECTION
@@ -195,8 +196,12 @@ Void TComDataCU::create(ChromaFormat chromaFormatIDC, UInt uiNumPartition, UInt 
 			m_pcTrCoeff[compID] = (TCoeff*)xMalloc(TCoeff, totalSize);
 			memset(m_pcTrCoeff[compID], 0, (totalSize * sizeof(TCoeff)));
 #if PGR_ENABLE
-            m_CtuPalette[compID] = (Pel *) xMalloc(Pel,INTRA_PR_PALETTE_NUM) ;
-            memset(m_CtuPalette[compID] ,0 , INTRA_PR_PALETTE_NUM*sizeof(Pel));
+
+            m_pcPRBits[compID]  = (TCoeff*) xMalloc(TCoeff, totalSize ) ;
+            memset( m_pcPRBits[compID],0, ( totalSize * sizeof( TCoeff ) ) );
+            m_piIndex[compID] = (Int*) xMalloc(Int, totalSize);
+            memset( m_piIndex[compID], 0, ( totalSize * sizeof( Int ) ) );
+            m_iIndexNum[compID] = 0 ;
 #endif
 #if ADAPTIVE_QP_SELECTION
 			if (pParentARLBuffer != 0)
@@ -364,11 +369,9 @@ Void TComDataCU::destroy()
 				m_pcTrCoeff[comp] = NULL;
 			}
 #if PGR_ENABLE
-            if(m_CtuPalette[comp] )
-            {
-                xFree(m_CtuPalette[comp]);
-                m_CtuPalette[comp] = NULL;
-            }
+
+            if ( m_pcPRBits[comp]  )    { xFree(m_pcPRBits[comp]);             m_pcPRBits[comp] = NULL; }
+            if ( m_piIndex[comp]  )       { xFree(m_piIndex[comp]);             m_piIndex[comp] = NULL; }
 #endif
 			if (m_explicitRdpcmMode[comp])
 			{
@@ -588,6 +591,11 @@ Void TComDataCU::initCtu(TComPic* pcPic, UInt ctuRsAddr)
 	{
 		const UInt componentShift = m_pcPic->getComponentScaleX(ComponentID(comp)) + m_pcPic->getComponentScaleY(ComponentID(comp));
 		memset(m_pcTrCoeff[comp], 0, sizeof(TCoeff)* numCoeffY >> componentShift);
+#if PGR_ENABLE 
+      memset( m_pcPRBits[ comp ] , 0 , sizeof(TCoeff)* numCoeffY>>componentShift  );
+      memset( m_piIndex   [ comp ],   0, sizeof(Int) * numCoeffY>>componentShift );
+      m_iIndexNum[ comp] = 0 ;
+#endif
 #if ADAPTIVE_QP_SELECTION
 		memset(m_pcArlCoeff[comp], 0, sizeof(TCoeff)* numCoeffY >> componentShift);
 #endif
@@ -732,6 +740,11 @@ Void TComDataCU::initEstData(const UInt uiDepth, const Int qp, const Bool bTrans
 #if ADAPTIVE_QP_SELECTION
 		memset(m_pcArlCoeff[comp], 0, numCoeff * sizeof(TCoeff));
 #endif
+#if PGR_ENABLE 
+      memset(  m_pcPRBits[comp],    0, numCoeff * sizeof( TCoeff ) );
+      memset( m_piIndex   [ comp ],   0, sizeof(Int) * numCoeff);
+      m_iIndexNum [ comp ] = 0 ;
+#endif
 		memset(m_pcIPCMSample[comp], 0, numCoeff * sizeof(Pel));
 		memset(m_piSPoint[comp], 0, numCoeff * sizeof(UChar));
 		memset(m_piEscapeFlag[comp], 0, numCoeff * sizeof(UChar));
@@ -783,6 +796,11 @@ Void TComDataCU::initRQTData(const UInt uiDepth, TComDataCU* pSrcCU, Bool bCopyS
 		memset(m_pcTrCoeff[comp], 0, numCoeff * sizeof(TCoeff));
 #if ADAPTIVE_QP_SELECTION
 		memset(m_pcArlCoeff[comp], 0, numCoeff * sizeof(TCoeff));
+#endif
+#if PGR_ENABLE 
+      memset(  m_pcPRBits[comp],    0, numCoeff * sizeof( TCoeff ) );
+      memset( m_piIndex   [ comp ],   0, numCoeff  * sizeof(Int  ));
+      m_iIndexNum[comp] = 0 ;
 #endif
 	}
 }
@@ -889,6 +907,11 @@ Void TComDataCU::initSubCU(TComDataCU* pcCU, UInt uiPartUnitIdx, UInt uiDepth, I
 		memset(m_pcTrCoeff[ch], 0, sizeof(TCoeff)*(numCoeffY >> componentShift));
 #if ADAPTIVE_QP_SELECTION
 		memset(m_pcArlCoeff[ch], 0, sizeof(TCoeff)*(numCoeffY >> componentShift));
+#endif
+#if PGR_ENABLE 
+      memset(  m_pcPRBits[ch],    0, sizeof(TCoeff)*(numCoeffY >> componentShift) );
+      memset( m_piIndex   [ ch ],   0,sizeof(Int)*(numCoeffY >> componentShift));
+      m_iIndexNum[ch] = 0 ;
 #endif
 		memset(m_pcIPCMSample[ch], 0, sizeof(Pel)* (numCoeffY >> componentShift));
 		memset(m_piSPoint[ch], 0, sizeof(UChar)* (numCoeffY >> componentShift));
@@ -1012,6 +1035,10 @@ Void TComDataCU::copySubCU(TComDataCU* pcCU, UInt uiAbsPartIdx, UInt uiDepth)
 		m_pcTrCoeff[ch] = pcCU->getCoeff(component) + offset;
 #if ADAPTIVE_QP_SELECTION
 		m_pcArlCoeff[ch] = pcCU->getArlCoeff(component) + offset;
+#endif
+#if PGR_ENABLE 
+        m_pcPRBits[ch] = pcCU->getPRBits(component) + offset;
+        m_piIndex[ch]    = pcCU->getPaletteIndex(component) + offset;
 #endif
 		m_pcIPCMSample[ch] = pcCU->getPCMSample(component) + offset;
 		m_piSPoint[ch] = pcCU->getSPoint(component) + offset;
@@ -1167,6 +1194,10 @@ Void TComDataCU::copyPartFrom(TComDataCU* pcCU, UInt uiPartUnitIdx, UInt uiDepth
 #if ADAPTIVE_QP_SELECTION
 		memcpy(m_pcArlCoeff[ch] + offset, pcCU->getArlCoeff(component), sizeof(TCoeff)*(numCoeffY >> componentShift));
 #endif
+#if PGR_ENABLE 
+        memcpy(m_pcPRBits[ch] + offset, pcCU->getPRBits(component), sizeof(TCoeff)*(numCoeffY >> componentShift));
+        memcpy(m_piIndex[ch] + offset, pcCU->getPaletteIndex(component), sizeof(Int)*(numCoeffY >> componentShift));
+#endif
 		memcpy(m_pcIPCMSample[ch] + offset, pcCU->getPCMSample(component), sizeof(Pel)*(numCoeffY >> componentShift));
 		memcpy(m_piSPoint[ch] + offset, pcCU->getSPoint(component), sizeof(UChar)* (numCoeffY >> componentShift));
 		memcpy(m_piEscapeFlag[ch] + offset, pcCU->getEscapeFlag(component), sizeof(UChar)* (numCoeffY >> componentShift));
@@ -1254,6 +1285,11 @@ Void TComDataCU::copyToPic(UChar uhDepth)
 		memcpy(pCtu->getCoeff(component) + (offsetY >> componentShift), m_pcTrCoeff[component], sizeof(TCoeff)*(numCoeffY >> componentShift));
 #if ADAPTIVE_QP_SELECTION
 		memcpy(pCtu->getArlCoeff(component) + (offsetY >> componentShift), m_pcArlCoeff[component], sizeof(TCoeff)*(numCoeffY >> componentShift));
+#endif
+#if PGR_ENABLE 
+        memcpy(pCtu->getPRBits(component) + (offsetY >> componentShift),m_pcPRBits [component], sizeof(TCoeff)*(numCoeffY >> componentShift));
+        memcpy(pCtu->getPaletteIndex(component) + (offsetY >> componentShift),m_piIndex [component], sizeof(Int)*(numCoeffY >> componentShift));
+		pCtu->getPaletteIndexNum()[component] = m_iIndexNum[component];
 #endif
 		memcpy(pCtu->getPCMSample(component) + (offsetY >> componentShift), m_pcIPCMSample[component], sizeof(Pel)*(numCoeffY >> componentShift));
 		memcpy(pCtu->getSPoint(component) + (offsetY >> componentShift), m_piSPoint[component], sizeof(UChar)* (numCoeffY >> componentShift));
