@@ -124,7 +124,7 @@ Void TDecCu::destroy()
 	delete[] m_ppcCU; m_ppcCU = NULL;
 
 #if PGR_ENABLE
-	::releaseMemoryPTHashTable();
+	::clearPTHashTable();
 
 	for (int ch = 0; ch < MAX_NUM_COMPONENT; ch++)
 	{
@@ -183,7 +183,7 @@ Void TDecCu::decompressCtu(TComDataCU* pCtu)
 
 	xDecompressCU(pCtu, 0, 0);
 #if PGR_ENABLE
-	::updatePixelAfterCompressing(pCtu, m_pPixel);
+	::updatePixel(pCtu, m_pPixel);
 #endif
 }
 
@@ -467,7 +467,8 @@ Void TDecCu::xDecompressCU(TComDataCU* pCtu, UInt uiAbsPartIdx, UInt uiDepth)
 #if PGR_ENABLE
 	if (pCtu->getPredictionMode(0) == MODE_INTRA)
 	{
-		::preDefaultMethod(m_ppcCU[uiDepth], m_pPixel);
+		::matchTemplate(m_ppcCU[uiDepth], m_pPixel);
+		::updateLookupTable(m_ppcCU[uiDepth], m_pPixel);
 	}
 #endif
 
@@ -524,19 +525,13 @@ Void TDecCu::initEstPGR(TComPic* pcPic)
 {
 	TComPicYuv* pcPicYuvRec = pcPic->getPicYuvRec();
 	UInt uiNumValidComponent = pcPicYuvRec->getNumberValidComponents();
-	// release hash table memory
-	::releaseMemoryPTHashTable();
+	// init hash table memory
+	::initPTHashTable();
 	for (int ch = 0; ch < uiNumValidComponent; ch++)
 	{
 		ComponentID cId = ComponentID(ch);
 		UInt uiPicWidth = pcPicYuvRec->getWidth(cId);
 		UInt uiPicHeight = pcPicYuvRec->getHeight(cId);
-
-		// init hashtable
-		for (int i = 0; i < MAX_PT_NUM; i++)
-		{
-			g_pPixelTemplate[cId][i] = NULL;
-		}
 
 		// init pixel data
 		if (m_pPixel[cId] == NULL)

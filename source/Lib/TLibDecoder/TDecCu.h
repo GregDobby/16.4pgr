@@ -130,7 +130,7 @@ protected:
   Void xPGRRecQT				(TComYuv* pcRecoYuv, TComYuv* pcPredYuv, TComYuv* pcResiYuv, const ChannelType component, TComTU &rTu);
   Void xPGRRecBlk				(TComYuv* pcRecoYuv, TComYuv* pcPredYuv, TComYuv* pcResiYuv, const ComponentID component, TComTU &rTu);
 
-  Void preDefaultMethod         (TComDataCU*& rpcTempCU);
+  Void matchTemplate(TComDataCU*& rpcTempCU);
 
 
 #endif

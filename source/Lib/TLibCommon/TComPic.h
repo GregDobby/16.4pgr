@@ -63,7 +63,7 @@ public:
 
 private:
   UInt                  m_uiTLayer;               //  Temporal layer
-  Bool                  m_bUsedByCurr;            //  Used by current picture
+  Bool                  m_bUsedByCurr;            //  Used by current -
   Bool                  m_bIsLongTerm;            //  IS long term picture
   TComPicSym            m_picSym;                 //  Symbol
   TComPicYuv*           m_apcPicYuv[NUM_PIC_YUV];

@@ -21,6 +21,8 @@ using namespace std;
 #define GOLOMB_EXP_BUFFER  (sizeof(TCoeff)*8)
 #define INTRA_PR_PALETTE_NUM  4
 #define MAX_BUFFER 4096
+#define INSERT_LIMIT 11
+#define LIST_LIMIT 10
 // ======== Structures ========
 
 // ---- Template Matching ----
@@ -57,8 +59,8 @@ typedef struct _PixelTemplate {
 	UInt m_PX;
 	UInt m_PY;
 	UInt m_uiNumUsed;	// how many times this pixel has been used to predicted
-	_PixelTemplate * m_pptNext;
-	_PixelTemplate(UInt uiX, UInt uiY) :m_PX(uiX), m_PY(uiY), m_uiNumUsed(0), m_pptNext(NULL){};
+	//_PixelTemplate * m_pptNext;
+	_PixelTemplate(UInt uiX, UInt uiY) :m_PX(uiX), m_PY(uiY), m_uiNumUsed(0){};
 } PixelTemplate, *PPixelTemplate;
 
 typedef struct _Palette
@@ -75,8 +77,9 @@ extern vector<UInt> g_auiRsmpldToOrg[MAX_NUM_COMPONENT][2];
 
 extern int g_auiTemplateOffset[21][2];
 
-extern PixelTemplate*	g_pPixelTemplate[MAX_NUM_COMPONENT][MAX_PT_NUM];	        ///< hash table
-extern vector<PixelTemplate*>	g_pPixelTemplatePool;								///< convinient for releasing memory
+extern vector<PixelTemplate>** g_vLookupTable[MAX_NUM_COMPONENT];					///< hash lookup table
+//extern PixelTemplate*	g_pPixelTemplate[MAX_NUM_COMPONENT][MAX_PT_NUM];	        ///< hash table
+//extern vector<PixelTemplate*>	g_pPixelTemplatePool;								///< convinient for releasing memory
 extern int g_auiTemplateOffset[21][2];
 
 extern TComPicYuv* g_pcYuvPred;
@@ -91,7 +94,7 @@ extern Palette				g_ppCTUPalette[MAX_NUM_COMPONENT];
 // ======== Global Function ========
 
 // release hash table memory
-Void releaseMemoryPTHashTable();
+Void clearPTHashTable();
 // init hash table
 Void initPTHashTable();
 // init g_auiOrgToRsmpld,g_auiRsmpldToOrg
@@ -99,9 +102,9 @@ Void initCoordinateMap(UInt uiSourceWidth, UInt uiSourceHeight, UInt uiMaxCUWidt
 
 // template matching
 
-Void preDefaultMethod(TComDataCU*& rpcTempCU, Pixel** ppPixel);
+Void matchTemplate(TComDataCU*& rpcTempCU, Pixel** ppPixel);
 
-Void updatePixelAfterCompressing(TComDataCU* pCtu, Pixel** ppPixel);
+Void updatePixel(TComDataCU* pCtu, Pixel** ppPixel);
 
 inline UInt getSerialIndex(UInt uiX, UInt uiY, UInt uiPicWidth);
 
@@ -111,8 +114,7 @@ UInt getHashValue(UInt uiX, UInt uiY, UInt uiPicWidth, Pixel* pPixel);
 
 Void tryMatch(UInt uiX, UInt uiY, UInt uiCX, UInt uiCY, MatchMetric &mmMatchMetric, UInt uiPicWidth, Pixel* pPixel);
 
-Void appendNewTemplate(UInt uiHashValue, PixelTemplate*& rpNewTemplate);
-
+Void updateLookupTable(TComDataCU*& rpcTempCU, Pixel** ppPixel);
 // ---- Revise Anomaly Residue ----
 
 typedef struct _PelCount

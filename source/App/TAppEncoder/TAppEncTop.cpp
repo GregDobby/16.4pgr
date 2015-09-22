@@ -662,7 +662,7 @@ Void TAppEncTop::xWriteOutput(std::ostream& bitstreamFile, Int iNumEncoded, cons
 			if (m_pchReconFile)
 			{
 				m_cTVideoIOYuvReconFile.write(pcPicYuvRec, ipCSC, m_confWinLeft, m_confWinRight, m_confWinTop, m_confWinBottom);
-				//TVideoIOYuv resi, abresi,pred;
+				TVideoIOYuv resi, abresi,pred;
 				//resi.open("resi.yuv", true, m_inputBitDepth, m_MSBExtendedBitDepth, m_internalBitDepth);  
 				//abresi.open("abresi.yuv", true, m_inputBitDepth, m_MSBExtendedBitDepth, m_internalBitDepth);
 				//pred.open("pred.yuv", true, m_inputBitDepth, m_MSBExtendedBitDepth, m_internalBitDepth);

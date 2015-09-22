@@ -82,18 +82,12 @@ Void  TEncCu::initEstPGR(TComPic* pcPic)
 	UInt uiNumValidComponent = pcPicYuvOrg->getNumberValidComponents();
 
 	// release hash table memory
-	::releaseMemoryPTHashTable();
+	::initPTHashTable();
 	for (int ch = 0; ch < uiNumValidComponent; ch++)
 	{
 		ComponentID cId = ComponentID(ch);
 		UInt uiPicWidth = pcPicYuvOrg->getWidth(cId);
 		UInt uiPicHeight = pcPicYuvOrg->getHeight(cId);
-
-		// init hashtable
-		for (int i = 0; i < MAX_PT_NUM; i++)
-		{
-			g_pPixelTemplate[cId][i] = NULL;
-		}
 
 		// init pixel data
 		if (m_pPixel[cId] == NULL)
@@ -326,7 +320,7 @@ Void TEncCu::destroy()
 	}
 
 #if PGR_ENABLE
-	::releaseMemoryPTHashTable();
+	::clearPTHashTable();
 
 	for (int ch = 0; ch < MAX_NUM_COMPONENT; ch++)
 	{
@@ -396,12 +390,13 @@ Void TEncCu::compressCtu(TComDataCU* pCtu, UChar* lastPLTSize, UChar* lastPLTUse
 	{
 		//derivePGRPLT(pCtu);
 		xCompressCUPGR(m_ppcBestCU[0], m_ppcTempCU[0], 0);
+		// deal with reconstructed pixels
+		::updatePixel(pCtu, m_pPixel);
 	}
 	else
 		xCompressCU(m_ppcBestCU[0], m_ppcTempCU[0], 0 DEBUG_STRING_PASS_INTO(sDebug));
 
-	// deal with reconstructed pixels
-	::updatePixelAfterCompressing(pCtu, m_pPixel);
+
 #else
 		xCompressCU( m_ppcBestCU[0], m_ppcTempCU[0], 0 DEBUG_STRING_PASS_INTO(sDebug) );
 #endif
@@ -431,7 +426,7 @@ Void TEncCu::encodeCtu(TComDataCU* pCtu)
 	{
 		setCodeChromaQpAdjFlag(true);
 	}
-
+#if PGR_ENABLE
 	if (pCtu->getCtuRsAddr() == 0)
 	{
 		// encode palette
@@ -442,6 +437,7 @@ Void TEncCu::encodeCtu(TComDataCU* pCtu)
 			m_pcEntropyCoder->encodePalette(g_ppPalette[cId]);
 		}
 	}
+#endif
 	// Encode CU data
 	xEncodeCU(pCtu, 0, 0);
 }
@@ -1690,8 +1686,8 @@ Void  TEncCu::xCompressCUPGR(TComDataCU*& rpcBestCU, TComDataCU*& rpcTempCU, UIn
 		(uiBPelY < sps.getPicHeightInLumaSamples()))
 	{
 		// ---- prediction using default method(Template Matching) ----
-		::preDefaultMethod(rpcTempCU, m_pPixel);
-
+		::matchTemplate(rpcTempCU, m_pPixel);
+		::updateLookupTable(rpcTempCU, m_pPixel);
 		// loop all possible QP values
 		for (Int iQP = iMinQP; iQP <= iMaxQP; iQP++)
 		{
@@ -1862,7 +1858,7 @@ Void TEncCu::xCheckPRGResidue(TComDataCU*& rpcBestCU, TComDataCU*& rpcTempCU, UI
 	UInt uiResiThreshold;
 	UInt uiThresholdIncrement = 2;		// uiResiThreshold updating step, to be setted
 	UInt uiMinThreshold, uiMaxThreshold;    // minimum and maximum value of uiResiThreshold, to be setted
-	uiMinThreshold = uiMaxThreshold = 20;
+	uiMinThreshold = uiMaxThreshold = 256;
 
 	// loop
 	// try different uiResiTreshold

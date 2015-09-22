@@ -11,8 +11,9 @@
 vector<UInt> g_auiOrgToRsmpld[MAX_NUM_COMPONENT][2];
 vector<UInt> g_auiRsmpldToOrg[MAX_NUM_COMPONENT][2];
 
-PixelTemplate*	g_pPixelTemplate[MAX_NUM_COMPONENT][MAX_PT_NUM];	        ///< hash table
-vector<PixelTemplate*>	g_pPixelTemplatePool;								///< convinient for releasing memory
+vector<PixelTemplate>** g_vLookupTable[MAX_NUM_COMPONENT];
+//PixelTemplate*	g_pPixelTemplate[MAX_NUM_COMPONENT][MAX_PT_NUM];	        ///< hash table
+//vector<PixelTemplate*>	g_pPixelTemplatePool;								///< convinient for releasing memory
 
 int g_auiTemplateOffset[21][2] = { { -1, 0 }, { -1, -1 }, { 0, -1 }, { 1, -1 }, { 2, -1 }, { -2, 0 }, { -2, -1 }, { -2, -2 }, { -1, -2 }, { 0, -2 }, { 1, -2 },
 { 2, -2 }, { -3, 0 }, { -3, -1 }, { -3, -2 }, { -3, -3 }, { -2, -3 }, { -1, -3 }, { 0, -3 }, { 1, -3 }, { 2, -3 } };
@@ -30,7 +31,120 @@ UInt g_uiMaxCUHeight = 64;
 Palette g_ppPalette[MAX_NUM_COMPONENT];
 Palette g_ppCTUPalette[MAX_NUM_COMPONENT];;
 
-Void preDefaultMethod(TComDataCU*& rpcTempCU, Pixel** ppPixel)
+Void matchTemplate(TComDataCU*& rpcTempCU, Pixel** ppPixel)
+{
+	// template matching
+	UInt uiCUPelX = rpcTempCU->getCUPelX();			// x of upper left corner of the cu
+	UInt uiCUPelY = rpcTempCU->getCUPelY();			// y of upper left corner of the cu
+
+	UInt uiMaxCUWidth = rpcTempCU->getSlice()->getSPS()->getMaxCUWidth();		// max cu width
+	UInt uiMaxCUHeight = rpcTempCU->getSlice()->getSPS()->getMaxCUHeight();		// max cu height
+
+	// pic
+	TComPic* pcPic = rpcTempCU->getPic();
+	TComPicYuv* pcPredYuv = pcPic->getPicYuvPred();
+	TComPicYuv* pcResiYuv = pcPic->getPicYuvResi();
+
+	UInt uiNumValidCopmonent = pcPic->getNumberValidComponents();
+	//fstream f;
+
+	for (UInt ch = 0; ch < uiNumValidCopmonent; ch++)
+	{
+		ComponentID cId = ComponentID(ch);
+		// picture description
+		UInt uiStride = pcPredYuv->getStride(cId);									// stride for a certain component
+		UInt uiPicWidth = pcPredYuv->getWidth(cId);									// picture width for a certain component
+		UInt uiPicHeight = pcPredYuv->getHeight(cId);								// picture height for a certain component
+
+		UInt uiCBWidth = uiMaxCUWidth >> (pcPredYuv->getComponentScaleX(cId));		// code block width for a certain component
+		UInt uiCBHeight = uiMaxCUHeight >> (pcPredYuv->getComponentScaleY(cId));	// code block height for a certain component
+
+		// rectangle of the code block
+		UInt uiTopX = Clip3((UInt)0, uiPicWidth, uiCUPelX);
+		UInt uiTopY = Clip3((UInt)0, uiPicHeight, uiCUPelY);
+		UInt uiBottomX = Clip3((UInt)0, uiPicWidth, uiCUPelX + uiCBWidth);
+		UInt uiBottomY = Clip3((UInt)0, uiPicHeight, uiCUPelY + uiCBHeight);
+		//if (ch == 0)
+		//	f.open("c1.txt",ios::app);
+		//if (ch == 1)
+		//	f.open("c2.txt",ios::app);
+		//if (ch == 2)
+		//	f.open("c3.txt",ios::app);
+		for (UInt uiY = uiTopY; uiY < uiBottomY; uiY++)
+		{
+			for (UInt uiX = uiTopX; uiX < uiBottomX; uiX++)
+			{
+				UInt uiOrgX, uiOrgY;
+				uiOrgX = g_auiRsmpldToOrg[cId][0][uiX];
+				uiOrgY = g_auiRsmpldToOrg[cId][1][uiY];
+
+				// template match
+				UInt uiHashValue = getHashValue(uiOrgX, uiOrgY, uiPicWidth, ppPixel[cId]);
+				Pixel* pCurPixel = ppPixel[cId] + getSerialIndex(uiOrgX, uiOrgY, uiPicWidth);
+				pCurPixel->m_uiHashValue = uiHashValue;
+
+				assert(uiHashValue >= 0 && uiHashValue < MAX_PT_NUM);
+				
+				vector<PixelTemplate>* pLookupTable = g_vLookupTable[cId][uiHashValue];
+				if (pLookupTable == NULL)
+				{
+					UInt uiIdx = uiY*uiStride + uiX;
+					g_pcYuvPred->getAddr(cId)[uiIdx] = pcPredYuv->getAddr(cId)[uiIdx] = pCurPixel->m_uiPred;
+					pcResiYuv->getAddr(cId)[uiIdx] = pCurPixel->m_iResi = pCurPixel->m_uiOrg - pCurPixel->m_uiPred;
+					continue;
+				}
+					//g_vLookupTable[cId][uiHashValue] = new vector<PixelTemplate>();
+
+				
+				PixelTemplate pBestMatch(-1,-1);								// best match template
+
+				MatchMetric mmBestMetric;
+				UInt uiListLength = 0;
+				vector<PixelTemplate>::iterator itBestMatch = pLookupTable->end();
+				for (auto it = pLookupTable->begin(); it != pLookupTable->end(); it++)
+				{
+					UInt uiCX = it->m_PX;
+					UInt uiCY = it->m_PY;
+
+					MatchMetric mmTmp;
+					// match
+					tryMatch(uiOrgX, uiOrgY, uiCX, uiCY, mmTmp, uiPicWidth, ppPixel[cId]);
+					if (mmTmp.m_uiNumMatchPoints > mmBestMetric.m_uiNumMatchPoints)
+					{
+						mmBestMetric = mmTmp;
+						itBestMatch = it;
+						pBestMatch = *it;
+					}
+				}
+
+				if (itBestMatch != pLookupTable->end())
+				{
+					//itBestMatch->m_uiNumUsed++;
+					UInt uiCX = pBestMatch.m_PX;
+					UInt uiCY = pBestMatch.m_PY;
+					if ((ppPixel[cId] + getSerialIndex(uiCX, uiCY, uiPicWidth))->m_bIsRec)
+					{
+						pCurPixel->m_mmMatch = mmBestMetric;
+						pBestMatch.m_uiNumUsed++;
+						Pixel* pRefPixel = ppPixel[cId] + getSerialIndex(mmBestMetric.m_uiX, mmBestMetric.m_uiY, uiPicWidth);
+						pCurPixel->m_uiPred = pRefPixel->m_uiReco;								// prediction
+						pCurPixel->m_iResi = pCurPixel->m_uiOrg - pCurPixel->m_uiPred;			// residue
+					}
+				}
+
+				UInt uiIdx = uiY*uiStride + uiX;
+				g_pcYuvPred->getAddr(cId)[uiIdx] = pcPredYuv->getAddr(cId)[uiIdx] = pCurPixel->m_uiPred;
+				pcResiYuv->getAddr(cId)[uiIdx] = pCurPixel->m_iResi = pCurPixel->m_uiOrg - pCurPixel->m_uiPred;
+				//f << pCurPixel->m_uiPred << endl;
+				//assert(pCurPixel->m_iResi >= -255 && pCurPixel->m_iResi <= 255);
+				//assert(pCurPixel->m_uiPred >= 0 && pCurPixel->m_uiPred <= 255);
+			}// end for x
+		}// end for y
+		//f.close();
+	}// end for ch
+}
+
+Void updateLookupTable(TComDataCU*& rpcTempCU, Pixel** ppPixel)
 {
 	// template matching
 	UInt uiCUPelX = rpcTempCU->getCUPelX();			// x of upper left corner of the cu
@@ -77,24 +191,22 @@ Void preDefaultMethod(TComDataCU*& rpcTempCU, Pixel** ppPixel)
 				pCurPixel->m_uiHashValue = uiHashValue;
 
 				assert(uiHashValue >= 0 && uiHashValue < MAX_PT_NUM);
-				PixelTemplate* pHashList = g_pPixelTemplate[cId][uiHashValue];	// hash list
-				PixelTemplate* pBestMatch = NULL;								// best match template
+				if (g_vLookupTable[cId][uiHashValue] == NULL)
+					g_vLookupTable[cId][uiHashValue] = new vector<PixelTemplate>();
+				vector<PixelTemplate>* pLookupTable = g_vLookupTable[cId][uiHashValue];
+
+
+				PixelTemplate pBestMatch(-1, -1);								// best match template
 
 				MatchMetric mmBestMetric;
 				UInt uiListLength = 0;
-
-				while (pHashList)
+				vector<PixelTemplate>::iterator itToBeReplaced = pLookupTable->end();
+				vector<PixelTemplate>::iterator itBestMatch = pLookupTable->end();
+				UInt minUsed = MAX_INT;
+				for (auto it = pLookupTable->begin(); it != pLookupTable->end(); it++)
 				{
-					uiListLength++;
-
-					UInt uiCX = pHashList->m_PX;
-					UInt uiCY = pHashList->m_PY;
-
-					if (!(ppPixel[cId] + getSerialIndex(uiCX, uiCY, uiPicWidth))->m_bIsRec)
-					{
-						pHashList = pHashList->m_pptNext;
-						continue;
-					}
+					UInt uiCX = it->m_PX;
+					UInt uiCY = it->m_PY;
 
 					MatchMetric mmTmp;
 					// match
@@ -102,46 +214,46 @@ Void preDefaultMethod(TComDataCU*& rpcTempCU, Pixel** ppPixel)
 					if (mmTmp.m_uiNumMatchPoints > mmBestMetric.m_uiNumMatchPoints)
 					{
 						mmBestMetric = mmTmp;
-						pBestMatch = pHashList;
+						itBestMatch = it;
+						pBestMatch = *it;
 					}
-					pHashList = pHashList->m_pptNext;
-				}// end while
-
-				if (pBestMatch)
-				{
-					UInt uiCX = pBestMatch->m_PX;
-					UInt uiCY = pBestMatch->m_PY;
-					if ((ppPixel[cId] + getSerialIndex(uiCX, uiCY, uiPicWidth))->m_bIsRec)
+					// 记录最小值
+					if (it->m_uiNumUsed < minUsed)
 					{
-						pCurPixel->m_mmMatch = mmBestMetric;
-						pBestMatch->m_uiNumUsed++;
-						Pixel* pRefPixel = ppPixel[cId] + getSerialIndex(mmBestMetric.m_uiX, mmBestMetric.m_uiY, uiPicWidth);
-						pCurPixel->m_uiPred = pRefPixel->m_uiReco;								// prediction
-						pCurPixel->m_iResi = pCurPixel->m_uiOrg - pCurPixel->m_uiPred;			// residue
+						minUsed = it->m_uiNumUsed;
+						itToBeReplaced = it;
 					}
 				}
-
-				if (mmBestMetric.m_uiNumMatchPoints < 18 && uiListLength < uiPicWidth / 10)
+				
+				// 判断是否插入
+				if (mmBestMetric.m_uiNumMatchPoints < INSERT_LIMIT)
 				{
 					// insert new template
-					PixelTemplate* pCurTemplate = new PixelTemplate(uiOrgX, uiOrgY);
-					pCurTemplate->m_pptNext = g_pPixelTemplate[cId][uiHashValue];
-					g_pPixelTemplate[cId][uiHashValue] = pCurTemplate;
-					g_pPixelTemplatePool.push_back(pCurTemplate);
+					if (pLookupTable->size() < uiPicWidth / LIST_LIMIT)
+					{
+						pLookupTable->push_back(PixelTemplate(uiOrgX, uiOrgY));
+					}
+					else
+					{
+						if (itToBeReplaced != pLookupTable->end())
+						{
+							*itToBeReplaced = PixelTemplate(uiOrgX, uiOrgY);
+						}
+					}
 				}
-
-				UInt uiIdx = uiY*uiStride + uiX;
-
-				g_pcYuvPred->getAddr(cId)[uiIdx] = pcPredYuv->getAddr(cId)[uiIdx] = pCurPixel->m_uiPred;
-				pcResiYuv->getAddr(cId)[uiIdx] = pCurPixel->m_iResi = pCurPixel->m_uiOrg - pCurPixel->m_uiPred;
-				assert(pCurPixel->m_iResi >= -255 && pCurPixel->m_iResi <= 255);
-				assert(pCurPixel->m_uiPred >= 0 && pCurPixel->m_uiPred <= 255);
-			}// end for x
-		}// end for y
-	}// end for ch
+				//else
+				//{
+				//	if (itBestMatch != pLookupTable->end())
+				//	{
+				//		itBestMatch->m_uiNumUsed++;
+				//	}
+				//}
+			}
+		}
+	}
 }
-
-Void updatePixelAfterCompressing(TComDataCU* pCtu, Pixel** ppPixel)
+// 更新原图像中的像素信息
+Void updatePixel(TComDataCU* pCtu, Pixel** ppPixel)
 {
 	UInt uiMaxCUWidth = pCtu->getSlice()->getSPS()->getMaxCUWidth();		// max cu width
 	UInt uiMaxCUHeight = pCtu->getSlice()->getSPS()->getMaxCUHeight();		// max cu height
@@ -186,7 +298,7 @@ Void updatePixelAfterCompressing(TComDataCU* pCtu, Pixel** ppPixel)
 
 				pPixel->m_bIsRec = true;
 				pPixel->m_uiReco = pBuffer[uiY*uiStride + uiX];
-				assert(pPixel->m_uiReco < 256);
+				//assert(pPixel->m_uiReco < 256);
 				//check << pPixel->m_uiReco << endl;
 			}
 		}
@@ -195,27 +307,34 @@ Void updatePixelAfterCompressing(TComDataCU* pCtu, Pixel** ppPixel)
 }
 
 // release hash table memory
-Void releaseMemoryPTHashTable()
+Void clearPTHashTable()
 {
-	for (int i = 0; i < g_pPixelTemplatePool.size(); i++)
+	for (UInt ch = 0; ch < MAX_NUM_COMPONENT; ch++)
 	{
-		delete g_pPixelTemplatePool[i];
-		g_pPixelTemplatePool[i] = NULL;
+		ComponentID cId = ComponentID(ch);
+		if (g_vLookupTable[cId] == NULL)
+			continue;
+		for (UInt ui = 0; ui < MAX_PT_NUM; ui++)
+		{
+			if (g_vLookupTable[cId][ui] != NULL)
+			{
+				g_vLookupTable[cId][ui]->clear();
+				delete g_vLookupTable[cId][ui];
+				g_vLookupTable[cId][ui] = NULL;
+			}
+		}
 	}
-	g_pPixelTemplatePool.clear();
 }
 
 // init hash table
 Void initPTHashTable()
 {
-	releaseMemoryPTHashTable();
+	clearPTHashTable();
 	for (UInt ch = 0; ch < MAX_NUM_COMPONENT; ch++)
 	{
 		ComponentID cId = ComponentID(ch);
-		for (UInt ui = 0; ui < MAX_PT_NUM; ui++)
-		{
-			g_pPixelTemplate[cId][ui] = NULL;
-		}
+		g_vLookupTable[cId] = new vector<PixelTemplate>*[MAX_PT_NUM];
+		memset(g_vLookupTable[cId], 0, sizeof(vector<PixelTemplate>*)*MAX_PT_NUM);
 	}
 }
 
@@ -393,9 +512,7 @@ Void tryMatch(UInt uiX, UInt uiY, UInt uiCX, UInt uiCY, MatchMetric &mmMatchMetr
 	mmMatchMetric.m_uiNumMatchPoints = uiNumMatchPoints;
 }
 
-Void appendNewTemplate(UInt uiHashValue, PixelTemplate*& rpNewTemplate)
-{
-}
+
 
 int GetGroupID(int n)
 {
