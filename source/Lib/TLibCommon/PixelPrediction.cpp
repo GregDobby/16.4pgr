@@ -46,7 +46,7 @@ Void matchTemplate(TComDataCU*& rpcTempCU, Pixel** ppPixel)
 	TComPicYuv* pcResiYuv = pcPic->getPicYuvResi();
 
 	UInt uiNumValidCopmonent = pcPic->getNumberValidComponents();
-	//fstream f;
+	fstream f;
 
 	for (UInt ch = 0; ch < uiNumValidCopmonent; ch++)
 	{
@@ -64,12 +64,12 @@ Void matchTemplate(TComDataCU*& rpcTempCU, Pixel** ppPixel)
 		UInt uiTopY = Clip3((UInt)0, uiPicHeight, uiCUPelY);
 		UInt uiBottomX = Clip3((UInt)0, uiPicWidth, uiCUPelX + uiCBWidth);
 		UInt uiBottomY = Clip3((UInt)0, uiPicHeight, uiCUPelY + uiCBHeight);
-		//if (ch == 0)
-		//	f.open("c1.txt",ios::app);
-		//if (ch == 1)
-		//	f.open("c2.txt",ios::app);
-		//if (ch == 2)
-		//	f.open("c3.txt",ios::app);
+		if (ch == 0)
+			f.open("c1.txt",ios::app);
+		if (ch == 1)
+			f.open("c2.txt",ios::app);
+		if (ch == 2)
+			f.open("c3.txt",ios::app);
 		for (UInt uiY = uiTopY; uiY < uiBottomY; uiY++)
 		{
 			for (UInt uiX = uiTopX; uiX < uiBottomX; uiX++)
@@ -135,12 +135,12 @@ Void matchTemplate(TComDataCU*& rpcTempCU, Pixel** ppPixel)
 				UInt uiIdx = uiY*uiStride + uiX;
 				g_pcYuvPred->getAddr(cId)[uiIdx] = pcPredYuv->getAddr(cId)[uiIdx] = pCurPixel->m_uiPred;
 				pcResiYuv->getAddr(cId)[uiIdx] = pCurPixel->m_iResi = pCurPixel->m_uiOrg - pCurPixel->m_uiPred;
-				//f << pCurPixel->m_uiPred << endl;
+				f << pCurPixel->m_iResi << endl;
 				//assert(pCurPixel->m_iResi >= -255 && pCurPixel->m_iResi <= 255);
 				//assert(pCurPixel->m_uiPred >= 0 && pCurPixel->m_uiPred <= 255);
 			}// end for x
 		}// end for y
-		//f.close();
+		f.close();
 	}// end for ch
 }
 

@@ -1,8 +1,5 @@
-﻿Build started 2015/9/22 11:08:42.
-     1>Project "D:\视频编码\hm16.4-pgr\build\vc10\TLibCommon_vc10.vcxproj" on node 2 (Clean target(s)).
-     1>C:\Program Files (x86)\MSBuild\Microsoft.Cpp\v4.0\V120\Microsoft.CppClean.targets(76,5): warning : The process cannot access the file 'd:\视频编码\hm16.4-pgr\build\vc10\win32\debug\tlibcommon\vc120.pdb' because it is being used by another process.
-     1>Done Building Project "D:\视频编码\hm16.4-pgr\build\vc10\TLibCommon_vc10.vcxproj" (Clean target(s)).
+﻿Build started 2015/10/8 8:28:43.
 
 Build succeeded.
 
-Time Elapsed 00:00:00.04
+Time Elapsed 00:00:00.11
