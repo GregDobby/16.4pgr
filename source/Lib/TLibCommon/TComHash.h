@@ -103,6 +103,8 @@ public:
   static UInt   getCRCValue2( UChar* p, Int length );
   static UShort getCRCValue3( UChar* p, Int length );
   static UShort getCRCValue4( UChar* p, Int length );
+  static UShort getCRCValue5(UChar* p, Int length);
+
 
   static Bool isRowSameValue( UChar* p, Int width, Bool includeAllComponent = true );
   static Void getPixelsIn1DCharArrayByRow( TComPicYuv* pPicYuv, UChar* pPixelsIn1D, Int width, Int xStart, Int yStart, const BitDepths& bitDepths, Bool includeAllComponent = true );
@@ -123,6 +125,8 @@ private:
   static TCRCCalculatorLight m_crcCalculator2;
   static TCRCCalculatorLight m_crcCalculator3;
   static TCRCCalculatorLight m_crcCalculator4;
+  static TCRCCalculatorLight m_crcCalculator5;
+
 };
 
 //! \}

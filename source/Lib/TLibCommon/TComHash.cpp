@@ -50,6 +50,8 @@ TCRCCalculatorLight TComHash::m_crcCalculator1(24, 0x5D6DCB);
 TCRCCalculatorLight TComHash::m_crcCalculator2(24, 0x864CFB);
 TCRCCalculatorLight TComHash::m_crcCalculator3(16, 0x8005);
 TCRCCalculatorLight TComHash::m_crcCalculator4(16, 0xA001);
+TCRCCalculatorLight TComHash::m_crcCalculator5(11, 0x385);
+
 
 TCRCCalculatorLight::TCRCCalculatorLight( UInt bits, UInt truncPoly )
 {
@@ -509,7 +511,12 @@ UShort TComHash::getCRCValue4( UChar* p, Int length )
   m_crcCalculator4.processData( p, length );
   return m_crcCalculator4.getCRC();
 }
-
+UShort TComHash::getCRCValue5(UChar* p, Int length)
+{
+	m_crcCalculator5.reset();
+	m_crcCalculator5.processData(p, length);
+	return m_crcCalculator5.getCRC();
+}
 
 
 //! \}

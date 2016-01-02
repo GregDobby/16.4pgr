@@ -127,6 +127,9 @@ public:
 
 	// init estimation data
 	Void  initEstPGR(TComPic* pcPic);
+
+	Pixel** getPixel() { return m_pPixel; };
+
 #endif
 
 	/// destroy internal buffers
@@ -140,7 +143,6 @@ public:
 
 	Int   updateCtuDataISlice(TComDataCU* pCtu, Int width, Int height);
 
-	Pixel** getPixel(){ return m_pPixel; };
 
 protected:
 	Void  finishCU(TComDataCU*  pcCU, UInt uiAbsPartIdx, UInt uiDepth);

@@ -1251,9 +1251,6 @@ Void TEncGOP::compressGOP(Int iPOCLast, Int iNumPicRcvd, TComList<TComPic*>& rcL
 			// derive global palette
 			derivePGRGlobalPLT(pcPic->getPicYuvOrg());
 		}
-
-
-
 #endif
 
 		//Set Frame/Field coding

@@ -320,6 +320,28 @@ Void TEncCu::destroy()
 	}
 
 #if PGR_ENABLE
+	//fstream f;
+	//for (UInt ch = 0; ch < MAX_NUM_COMPONENT; ch++)
+	//{
+	//	ComponentID cId = ComponentID(ch);
+	//	if (g_vLookupTable[cId] == NULL)
+	//		continue;
+	//	if (cId == 0)
+	//		f.open("hllength_0.txt", ios::out);
+	//	if (cId == 1)
+	//		f.open("hllength_1.txt", ios::out);
+	//	if (cId == 2)
+	//		f.open("hllength_2.txt", ios::out);
+	//	for (UInt ui = 0; ui < MAX_PT_NUM; ui++)
+	//	{
+	//		if (g_vLookupTable[cId][ui] != NULL)
+	//		{
+	//			f << ui << "\t\t" << g_vLookupTable[cId][ui]->size() << endl;
+	//		}
+	//	}
+	//	f.close();
+	//}
+	
 	::clearPTHashTable();
 
 	for (int ch = 0; ch < MAX_NUM_COMPONENT; ch++)
@@ -385,6 +407,9 @@ Void TEncCu::compressCtu(TComDataCU* pCtu, UChar* lastPLTSize, UChar* lastPLTUse
 	DEBUG_STRING_NEW(sDebug)
 
 #if PGR_ENABLE
+
+		clock_t start, end;
+	start = clock();
 		// for intra frame, use PGR method
 	if (pCtu->getSlice()->getSliceType() == I_SLICE)
 	{
@@ -395,7 +420,8 @@ Void TEncCu::compressCtu(TComDataCU* pCtu, UChar* lastPLTSize, UChar* lastPLTUse
 	}
 	else
 		xCompressCU(m_ppcBestCU[0], m_ppcTempCU[0], 0 DEBUG_STRING_PASS_INTO(sDebug));
-
+	end = clock();
+	cout << end - start << endl;
 
 #else
 		xCompressCU( m_ppcBestCU[0], m_ppcTempCU[0], 0 DEBUG_STRING_PASS_INTO(sDebug) );
@@ -404,7 +430,7 @@ Void TEncCu::compressCtu(TComDataCU* pCtu, UChar* lastPLTSize, UChar* lastPLTUse
 	DEBUG_STRING_OUTPUT(std::cout, sDebug)
 
 #if ADAPTIVE_QP_SELECTION
-	if (m_pcEncCfg->getUseAdaptQpSelect())
+  	if (m_pcEncCfg->getUseAdaptQpSelect())
 	{
 		if (pCtu->getSlice()->getSliceType() != I_SLICE) //IIII
 		{
@@ -1687,7 +1713,7 @@ Void  TEncCu::xCompressCUPGR(TComDataCU*& rpcBestCU, TComDataCU*& rpcTempCU, UIn
 	{
 		// ---- prediction using default method(Template Matching) ----
 		::matchTemplate(rpcTempCU, m_pPixel);
-		::updateLookupTable(rpcTempCU, m_pPixel);
+
 		// loop all possible QP values
 		for (Int iQP = iMinQP; iQP <= iMaxQP; iQP++)
 		{
@@ -1880,7 +1906,7 @@ Void TEncCu::xCheckPRGResidue(TComDataCU*& rpcBestCU, TComDataCU*& rpcTempCU, UI
 
 		// ---- revise anomaly residue using different methods ----
 		reviseAnomalyResidue(rpcTempCU, m_ppcOrigYuv[uiDepth], m_ppcPredYuvTemp[uiDepth], m_ppcResiYuvTemp[uiDepth], m_ppcAbnormalResiYuvTemp[uiDepth], uiResiThreshold);
-
+		 
 		// coefficients
 		m_pcPredSearch->estPGRLumaQT(rpcTempCU, m_ppcOrigYuv[uiDepth], m_ppcPredYuvTemp[uiDepth], m_ppcResiYuvTemp[uiDepth], m_ppcRecoYuvTemp[uiDepth]);
 

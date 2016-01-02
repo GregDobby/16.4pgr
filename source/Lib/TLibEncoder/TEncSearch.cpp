@@ -1967,19 +1967,6 @@ TEncSearch::xSetIntraResultLumaQT(TComYuv* pcRecoYuv, TComTU &rTu)
       TCoeff* destCoeff      = pcCU->getCoeff(COMPONENT_Y) + coeffOffset;
       ::memcpy( destCoeff, srcCoeff, sizeof(TCoeff)*numCoeffInBlock );
 
-	  //int x1, x2, y1, y2;
-	  //x1 = pcCU->getCUPelX() + tuRect.x0;
-	  //x2 = x1 + tuRect.width;
-	  //y1 = pcCU->getCUPelY() + tuRect.y0;
-	  //y2 = y1 + tuRect.height;
-	  //int i = 0;
-	  //for (int x = x1; x < x2; x++)
-	  //{
-		 // for (int y = y1; y < y2; y++)
-		 // {
-			//  lumaCoefR[x + y * 1920] = destCoeff[i++];
-		 // }
-	  //}
 #if ADAPTIVE_QP_SELECTION
       const TCoeff* srcArlCoeff = m_ppcQTTempArlCoeff[COMPONENT_Y][ uiQTLayer ] + coeffOffset;
       TCoeff* destArlCoeff      = pcCU->getArlCoeff (COMPONENT_Y)               + coeffOffset;
@@ -2915,8 +2902,6 @@ DEBUG_STRING_APPEND(sDebug, sPU)
 		::memcpy(pcCU->getTransformSkip(compID), m_puhQTTempTransformSkipFlag[compID], uiQPartNum * sizeof(UChar));
 	}
 
-	//=== update PU data ====
-	//pcCU->setIntraDirSubParts(CHANNEL_TYPE_LUMA, uiBestPUMode, uiPartOffset, uiDepth + uiInitTrDepth);
 
 	//===== reset context models =====
 	m_pcRDGoOnSbacCoder->load(m_pppcRDSbacCoder[uiDepth][CI_CURR_BEST]);
@@ -2938,10 +2923,11 @@ Void TEncSearch::xRecurPGRLumaCodingQT(TComYuv*    pcOrgYuv,
 	const UInt    uiTrDepth = rTu.GetTransformDepthRel();
 	const UInt    uiLog2TrSize = rTu.GetLog2LumaTrSize();
 	Bool    bCheckFull = (uiLog2TrSize <= pcCU->getSlice()->getSPS()->getQuadtreeTULog2MaxSize());
+	// wangzheng
 	Bool    bCheckSplit = (uiLog2TrSize > 5);// pcCU->getQuadtreeTULog2MinSizeInCU(uiAbsPartIdx));
 
 
-#if SCM_T0121_INFER_TU_SPLIT_ENCODER
+#if SCM_T0121_INFER_TU_SPLIT_ENCODER 
 	if (m_pcEncCfg->getTransquantBypassInferTUSplit() && pcCU->isLosslessCoded(uiAbsPartIdx) && bCheckFull)
 	{
 		bCheckSplit = false;
@@ -3231,6 +3217,7 @@ Void TEncSearch::xPGRCodingTUBlock( TComYuv*    pcOrgYuv,
 						UInt uiPLTIdx = pAbResi[uiX];
 						assert(uiPLTIdx < 4 && uiPLTIdx >= 0);
 						pReco[uiX] = Pel(ClipBD<Int>(Int(g_ppPalette[compID].m_pEntry[uiPLTIdx]) + Int(pResi[uiX]), bitDepth));
+
 					}
 					else
 					{
@@ -3244,6 +3231,7 @@ Void TEncSearch::xPGRCodingTUBlock( TComYuv*    pcOrgYuv,
 				pPred += uiStride;
 				pResi += uiStride;
 				pReco += uiStride;
+				pOrg += uiStride;
 				pRecQt += uiRecQtStride;
 				pRecIPred += uiRecIPredStride;
 				pAbResi += uiAbResiStride;

@@ -1,5 +1,2 @@
-﻿Build started 2015/10/8 8:28:42.
-
-Build succeeded.
-
-Time Elapsed 00:00:00.11
+﻿C:\Program Files (x86)\MSBuild\Microsoft.Cpp\v4.0\V140\Microsoft.CppClean.targets(76,5): warning : 文件“e:\视频编码\hm16.4-pgr\bin\vc10\win32\debug\tappdecoderanalyser.pdb”正由另一进程使用，因此该进程无法访问此文件。
+C:\Program Files (x86)\MSBuild\Microsoft.Cpp\v4.0\V140\Microsoft.CppClean.targets(76,5): warning : 文件“e:\视频编码\hm16.4-pgr\bin\vc10\win32\debug\tappdecoderanalyser.pdb”正由另一进程使用，因此该进程无法访问此文件。

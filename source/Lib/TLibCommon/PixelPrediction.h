@@ -14,14 +14,14 @@ using namespace std;
 
 // ======== Macro ========
 
-#define MAX_PT_NUM		16777216
+#define MAX_PT_NUM		67108864 //16777216
 #define EXTEG			16
 #define MAX_PLT_SIZE	16
 
 #define GOLOMB_EXP_BUFFER  (sizeof(TCoeff)*8)
 #define INTRA_PR_PALETTE_NUM  4
 #define MAX_BUFFER 4096
-#define INSERT_LIMIT 11
+#define INSERT_LIMIT 5
 #define LIST_LIMIT 10
 // ======== Structures ========
 
@@ -37,7 +37,7 @@ typedef struct _MatchMetric
 	UInt m_uiNumMatchPoints;
 	UInt m_uiNumValidPoints;
 	UInt m_uiX, m_uiY;
-	_MatchMetric() :m_uiAbsDiff(0), m_uiNumMatchPoints(0), m_uiNumValidPoints(0), m_uiX(0), m_uiY(0){};
+	_MatchMetric() :m_uiAbsDiff(255), m_uiNumMatchPoints(0), m_uiNumValidPoints(0), m_uiX(0), m_uiY(0){};
 }*PMatchMetric, MatchMetric;
 
 typedef struct _Pixel {
@@ -55,12 +55,23 @@ typedef struct _Pixel {
 	UInt m_uiHashValue;			///< hash value
 } Pixel, *PPixel;
 
+enum TemplateState
+{
+	NEW = 0,
+	DISPLACE = 1,
+	TO_BE_REMOVED = 2
+};
 typedef struct _PixelTemplate {
 	UInt m_PX;
 	UInt m_PY;
 	UInt m_uiNumUsed;	// how many times this pixel has been used to predicted
-	//_PixelTemplate * m_pptNext;
-	_PixelTemplate(UInt uiX, UInt uiY) :m_PX(uiX), m_PY(uiY), m_uiNumUsed(0){};
+	UInt m_uiHashValue1;
+	UInt m_uiHashValue2;
+	UInt m_uiNumTemplate;
+	UInt m_uiState;
+	_PixelTemplate * m_pptNext;
+	_PixelTemplate(UInt uiX, UInt uiY, UInt uiHashValue1,UInt uiHashValue2,UInt uiNumTemplate,UInt uiState) :m_PX(uiX), m_PY(uiY), m_uiNumUsed(0), m_uiHashValue1(uiHashValue1),m_uiHashValue2(uiHashValue2), m_uiNumTemplate(uiNumTemplate),m_uiState(uiState), m_pptNext(NULL){};
+
 } PixelTemplate, *PPixelTemplate;
 
 typedef struct _Palette
@@ -77,7 +88,9 @@ extern vector<UInt> g_auiRsmpldToOrg[MAX_NUM_COMPONENT][2];
 
 extern int g_auiTemplateOffset[21][2];
 
-extern vector<PixelTemplate>** g_vLookupTable[MAX_NUM_COMPONENT];					///< hash lookup table
+
+extern PixelTemplate* g_pLookupTable[MAX_NUM_COMPONENT][MAX_PT_NUM];
+
 //extern PixelTemplate*	g_pPixelTemplate[MAX_NUM_COMPONENT][MAX_PT_NUM];	        ///< hash table
 //extern vector<PixelTemplate*>	g_pPixelTemplatePool;								///< convinient for releasing memory
 extern int g_auiTemplateOffset[21][2];
@@ -110,9 +123,11 @@ inline UInt getSerialIndex(UInt uiX, UInt uiY, UInt uiPicWidth);
 
 Void getNeighbors(UInt uiX, UInt uiY, UInt uiPicWidth, Pixel* pPixel, Pixel* vTemplate);
 
-UInt getHashValue(UInt uiX, UInt uiY, UInt uiPicWidth, Pixel* pPixel);
+Void getHashValue(UInt uiX, UInt uiY, UInt uiPicWidth, Pixel* pPixel, UInt& uiHashValue1, UInt& uiHashValue2);
 
 Void tryMatch(UInt uiX, UInt uiY, UInt uiCX, UInt uiCY, MatchMetric &mmMatchMetric, UInt uiPicWidth, Pixel* pPixel);
+
+UInt getNumTemplate(UInt uiX, UInt uiY, UInt uiPicWidth, Pixel* pPixel);
 
 Void updateLookupTable(TComDataCU*& rpcTempCU, Pixel** ppPixel);
 // ---- Revise Anomaly Residue ----

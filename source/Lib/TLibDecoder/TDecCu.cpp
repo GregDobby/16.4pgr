@@ -468,7 +468,7 @@ Void TDecCu::xDecompressCU(TComDataCU* pCtu, UInt uiAbsPartIdx, UInt uiDepth)
 	if (pCtu->getPredictionMode(0) == MODE_INTRA)
 	{
 		::matchTemplate(m_ppcCU[uiDepth], m_pPixel);
-		::updateLookupTable(m_ppcCU[uiDepth], m_pPixel);
+		//::updateLookupTable(m_ppcCU[uiDepth], m_pPixel);
 	}
 #endif
 
