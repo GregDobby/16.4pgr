@@ -8,6 +8,7 @@
 #include <TLibCommon\TComHash.h>
 
 #include <fstream>
+#include <omp.h>
 
 using namespace std;
 
@@ -23,12 +24,10 @@ PixelTemplate* g_pLookupTable[MAX_NUM_COMPONENT][MAX_PT_NUM];
 int g_auiTemplateOffset[21][2] = { { -1, 0 }, { -1, -1 }, { 0, -1 }, { 1, -1 }, { 2, -1 }, { -2, 0 }, { -2, -1 }, { -2, -2 }, { -1, -2 }, { 0, -2 }, { 1, -2 },
 { 2, -2 }, { -3, 0 }, { -3, -1 }, { -3, -2 }, { -3, -3 }, { -2, -3 }, { -1, -3 }, { 0, -3 }, { 1, -3 }, { 2, -3 } };
 
-TComPicYuv* g_pcYuvPred = NULL;
-TComPicYuv* g_pcYuvResi = NULL;
+//TComPicYuv* g_pcYuvPred = NULL;
+//TComPicYuv* g_pcYuvResi = NULL;
 TComPicYuv* g_pcYuvAbnormalResi = NULL;
 
-TCoeff * lumaCoefR = new TCoeff[1920 * 1080];
-TCoeff * lumaCoef = new TCoeff[1920 * 1080];
 
 UInt g_uiMaxCUWidth = 64;
 UInt g_uiMaxCUHeight = 64;
@@ -51,16 +50,19 @@ Void matchTemplate(TComDataCU*& rpcTempCU, Pixel** ppPixel)
 	TComPicYuv* pcResiYuv = pcPic->getPicYuvResi();
 
 	UInt uiNumValidCopmonent = pcPic->getNumberValidComponents();
-	fstream f,fc;
 
-	clock_t start, end;
+	vector<PixelTemplate> vInsertList;
+
 	for (UInt ch = 0; ch < uiNumValidCopmonent; ch++)
 	{
 		int all = 0;
 		int average = 0;
+		int afind = 0;
+		int maxfind = 0, minfind = INT_MAX;
+		int ax = 0, ay = 0;
+		int adiff = 0;
 
 		ComponentID cId = ComponentID(ch);
-		vector<PixelTemplate> vInsertList;
 		// picture description
 		UInt uiStride = pcPredYuv->getStride(cId);									// stride for a certain component
 		UInt uiPicWidth = pcPredYuv->getWidth(cId);									// picture width for a certain component
@@ -75,21 +77,6 @@ Void matchTemplate(TComDataCU*& rpcTempCU, Pixel** ppPixel)
 		UInt uiBottomX = Clip3((UInt)0, uiPicWidth, uiCUPelX + uiCBWidth);
 		UInt uiBottomY = Clip3((UInt)0, uiPicHeight, uiCUPelY + uiCBHeight);
 
-		if (ch == 0)
-		{
-			f.open("resi_0.txt", ios::app);
-			fc.open("reference_0.txt", ios::app);
-		}
-		if (ch == 1)
-		{
-			f.open("resi_1.txt", ios::app);
-			fc.open("reference_1.txt", ios::app);
-		}
-		if (ch == 2)
-		{
-			f.open("resi_2.txt", ios::app);
-			fc.open("reference_2.txt", ios::app);
-		}
 
 		for (UInt uiY = uiTopY; uiY < uiBottomY; uiY++)
 		{
@@ -120,20 +107,19 @@ Void matchTemplate(TComDataCU*& rpcTempCU, Pixel** ppPixel)
 				if (uiNumTemplate < 1)
 				{
 					UInt uiIdx = uiY * uiStride + uiX;
-					g_pcYuvPred->getAddr(cId)[uiIdx] = pcPredYuv->getAddr(cId)[uiIdx] = pCurPixel->m_uiPred;
+					pcPredYuv->getAddr(cId)[uiIdx] = pCurPixel->m_uiPred;
 					pcResiYuv->getAddr(cId)[uiIdx] = pCurPixel->m_iResi = pCurPixel->m_uiOrg - pCurPixel->m_uiPred;
-					f << pCurPixel->m_iResi << endl;
 					continue;
 				}
+
 				// if lookuptable is empty, predict target with default value and insert template
 				if (pLookupTable == NULL)
 				{
 					//
 					vInsertList.push_back(PixelTemplate(uiOrgX, uiOrgY, uiHashValue1,uiHashValue2,uiNumTemplate,NEW));
 					UInt uiIdx = uiY*uiStride + uiX;
-					g_pcYuvPred->getAddr(cId)[uiIdx] = pcPredYuv->getAddr(cId)[uiIdx] = pCurPixel->m_uiPred;
+					pcPredYuv->getAddr(cId)[uiIdx] = pCurPixel->m_uiPred;
 					pcResiYuv->getAddr(cId)[uiIdx] = pCurPixel->m_iResi = pCurPixel->m_uiOrg - pCurPixel->m_uiPred;
-					f << pCurPixel->m_iResi << endl;
 					continue;
 				}
 
@@ -141,11 +127,13 @@ Void matchTemplate(TComDataCU*& rpcTempCU, Pixel** ppPixel)
 				UInt uiListLength = 0;
 				PixelTemplate* pBestMatch = NULL;
 				PixelTemplate* pPixelTemplate = pLookupTable;
-
-				start = clock();
-
+#if PGR_DEBUG
 				int length = 0;
 				int a = 0;
+				int find = 0;
+				int fx = 0, fy = 0;
+				int diff = 0;
+#endif
 				UInt uiRemoved = 0;
 				// find best matched template
 				while (pPixelTemplate != NULL)
@@ -153,8 +141,9 @@ Void matchTemplate(TComDataCU*& rpcTempCU, Pixel** ppPixel)
 					UInt uiCX = pPixelTemplate->m_PX;
 					UInt uiCY = pPixelTemplate->m_PY;
 					MatchMetric mmTmp;
-					
+#if PGR_DEBUG
 					length++;
+#endif
 					
 					tryMatch(uiOrgX, uiOrgY, uiCX, uiCY, mmTmp, uiPicWidth, ppPixel[cId]);
 					// set best matched template
@@ -163,6 +152,11 @@ Void matchTemplate(TComDataCU*& rpcTempCU, Pixel** ppPixel)
 					{
 						mmBestMetric = mmTmp;
 						pBestMatch = pPixelTemplate;
+						find = length; 
+						fx = abs(int(uiOrgX - uiCX)) / 64;
+						fy = abs(int(uiOrgY - uiCY)) / 64;
+						diff = mmTmp.m_uiAbsDiff;
+
 					}
 
 					// replace useless template
@@ -175,16 +169,11 @@ Void matchTemplate(TComDataCU*& rpcTempCU, Pixel** ppPixel)
 					pPixelTemplate = pPixelTemplate->m_pptNext;
 				}
 
-				average += length;
-
 				// predict target with best matched candidate
 				if (pBestMatch != NULL)
 				{
 					UInt uiCX = pBestMatch->m_PX;
 					UInt uiCY = pBestMatch->m_PY;
-
-					fc << int(uiCX-uiOrgX) << "\t" << int(uiCY - uiOrgY) << endl;
-					//cout << int(uiCX - uiOrgX) << "\t" << int(uiCY - uiOrgY) << endl;
 					if ((ppPixel[cId] + getSerialIndex(uiCX, uiCY, uiPicWidth))->m_bIsRec)
 					{
 						pCurPixel->m_mmMatch = mmBestMetric;
@@ -194,44 +183,52 @@ Void matchTemplate(TComDataCU*& rpcTempCU, Pixel** ppPixel)
 						pCurPixel->m_iResi = pCurPixel->m_uiOrg - pCurPixel->m_uiPred;			// residue
 					}
 				}
-				end = clock();
-				all += end - start;
 				
 				// insert new template
 				if (mmBestMetric.m_uiAbsDiff > INSERT_LIMIT)
 					vInsertList.push_back(PixelTemplate(uiOrgX, uiOrgY, uiHashValue1,uiHashValue2,uiNumTemplate,NEW));
-				// replace old template
+				// replace old template 
 				if(uiNumTemplate < 21 && uiRemoved>0 
 					|| uiNumTemplate == 21 && uiRemoved > 1)
 					vInsertList.push_back(PixelTemplate(uiOrgX, uiOrgY, uiHashValue1, uiHashValue2, uiNumTemplate, DISPLACE));
 
 				UInt uiIdx = uiY*uiStride + uiX;
-				g_pcYuvPred->getAddr(cId)[uiIdx] = pcPredYuv->getAddr(cId)[uiIdx] = pCurPixel->m_uiPred;
+				pcPredYuv->getAddr(cId)[uiIdx] = pCurPixel->m_uiPred;
 				pcResiYuv->getAddr(cId)[uiIdx] = pCurPixel->m_iResi = pCurPixel->m_uiOrg - pCurPixel->m_uiPred;
-				f << pCurPixel->m_iResi << endl;
+
+#if PGR_DEBUG
+				all += length;
+				afind += find;
+				ax += fx;
+				ay += fy;
+				adiff += diff;
+				minfind = min(minfind, find);
+				maxfind = max(maxfind, find);
+#endif
 			}// end for x
 		}// end for y
-		f.close();
-		fc.close();
-		
+		//fc.close();
+#if PGR_DEBUG
+		cout <<"search:" <<all / 4096 << endl;
+		cout << "find:" << afind / 4096 << endl;
+		cout << "max:" << maxfind << "\t" << "min:" << minfind << endl;
+		cout << "x:" << ax/4096 << "\t" << "y:" << ay/4096 << endl;
+		cout << "diff:" << adiff / 4096 << endl;
+#endif
 
-		start = clock();
-		UInt replace, remove;
-		replace = remove = 0;
+
 		// insert template
 		for (vector<PixelTemplate>::iterator it = vInsertList.begin(); it != vInsertList.end(); it++)
 		{
 			UInt uiHashValue = it->m_uiHashValue1;
 			if (it->m_uiState == DISPLACE)
 			{
-				replace++;
 				PixelTemplate* p = g_pLookupTable[cId][uiHashValue];
 				PixelTemplate* pre = NULL;
 				while (p != NULL)
 				{
 					if (p->m_uiState == TO_BE_REMOVED)
 					{
-						remove++;
 						PixelTemplate* q = p;
 						if (pre == NULL)
 						{
@@ -258,12 +255,6 @@ Void matchTemplate(TComDataCU*& rpcTempCU, Pixel** ppPixel)
 			g_pLookupTable[cId][uiHashValue] = pNewTemplate;
 		}
 
-		end = clock();
-		cout << "Length average:" << average / 4096 << endl;
-		cout << "All search:" << all << endl;
-		cout << "Insertion:" << end - start << endl;
-		cout << "Replace:Remove: " << replace << ":" << remove << endl;
-		cout << "Insert: " << vInsertList.size() << endl;
 		vInsertList.clear();
 	}// end for ch
 }
@@ -277,8 +268,8 @@ Void updatePixel(TComDataCU* pCtu, Pixel** ppPixel)
 
 	// pic
 	TComPic *pcPic = pCtu->getPic();
-	TComPicYuv* pcPredYuv = pcPic->getPicYuvPred();
-	TComPicYuv* pcResiYuv = pcPic->getPicYuvResi();
+	//TComPicYuv* pcPredYuv = pcPic->getPicYuvPred();
+	//TComPicYuv* pcResiYuv = pcPic->getPicYuvResi();
 	TComPicYuv* pcRecoYuv = pcPic->getPicYuvRec();
 	UInt uiNumValidCopmonent = pcPic->getNumberValidComponents();
 
@@ -286,15 +277,14 @@ Void updatePixel(TComDataCU* pCtu, Pixel** ppPixel)
 	{
 		ComponentID cId = ComponentID(ch);
 		// picture description
-		UInt uiStride = pcPredYuv->getStride(cId);									// stride for a certain component
-		UInt uiPicWidth = pcPredYuv->getWidth(cId);									// picture width for a certain component
-		UInt uiPicHeight = pcPredYuv->getHeight(cId);								// picture height for a certain component
+		UInt uiStride = pcRecoYuv->getStride(cId);									// stride for a certain component
+		UInt uiPicWidth = pcRecoYuv->getWidth(cId);									// picture width for a certain component
+		UInt uiPicHeight = pcRecoYuv->getHeight(cId);								// picture height for a certain component
 
-		// template matching
-		UInt uiCUPelX = pCtu->getCUPelX() >> (pcPredYuv->getComponentScaleX(cId));			// x of upper left corner of the cu
-		UInt uiCUPelY = pCtu->getCUPelY() >> (pcPredYuv->getComponentScaleY(cId));;			// y of upper left corner of the
-		UInt uiCBWidth = uiMaxCUWidth >> (pcPredYuv->getComponentScaleX(cId));		// code block width for a certain component
-		UInt uiCBHeight = uiMaxCUHeight >> (pcPredYuv->getComponentScaleY(cId));	// code block height for a certain component
+		UInt uiCUPelX = pCtu->getCUPelX() >> (pcRecoYuv->getComponentScaleX(cId));			// x of upper left corner of the cu
+		UInt uiCUPelY = pCtu->getCUPelY() >> (pcRecoYuv->getComponentScaleY(cId));;			// y of upper left corner of the
+		UInt uiCBWidth = uiMaxCUWidth >> (pcRecoYuv->getComponentScaleX(cId));		// code block width for a certain component
+		UInt uiCBHeight = uiMaxCUHeight >> (pcRecoYuv->getComponentScaleY(cId));	// code block height for a certain component
 
 		// rectangle of the code block
 		UInt uiTopX = Clip3((UInt)0, uiPicWidth, uiCUPelX);
@@ -718,6 +708,13 @@ int getG0Bits(int x)
 	return bits;
 }
 
+Double GetMinRadius(UInt x1, UInt y1, UInt x2, UInt y2)
+{
+	UInt temx = x2 - x1;
+	UInt temy = y2 - y1;
+	return sqrt(temx*temx + temy*temy);
+}
+
 Void  PositionCode_PathLeast(TComYuv *pcResiYuv, const ComponentID compID, TCoeff* pcCoeff, UInt* puiPLTIdx, UInt& uiNumIdx)
 {
 	const ChannelType chType = toChannelType(compID);
@@ -736,6 +733,10 @@ Void  PositionCode_PathLeast(TComYuv *pcResiYuv, const ComponentID compID, TCoef
 	UInt uiPreX = 0;
 	UInt uiPreY = 0;
 	Bool bContinue = true;
+	// add in 2016-02-19
+	Bool bStopForMark = false;
+	Double dMinRadius = 0.0;
+	// end
 
 	while (bContinue)
 	{
@@ -743,43 +744,132 @@ Void  PositionCode_PathLeast(TComYuv *pcResiYuv, const ComponentID compID, TCoef
 		UInt uiNextX = -1;
 		UInt uiNextY = -1;
 		pResi = piResi;
-		for (UInt uiY = 0; uiY < uiHeight; uiY++)
+		bStopForMark = false;
+
+		for (UInt uiY = uiPreY; uiY < uiHeight; uiY++)
 		{
-			for (UInt uiX = 0; uiX<uiWidth; uiX++)
+			if (bStopForMark == true)
+			{
+				break;
+			}
+			for (UInt uiX = uiPreX; uiX < uiWidth; uiX++)
 			{
 				assert(pResi[uiX] >-256 && pResi[uiX] < 256);
+				// 原条件：已经扫描的点不扫描，扫描方式逐行逐列
+				// if (pResi[uiX] != -1)
+				// 更新条件，
+				// 1.贪心方式：每找到一个点下一次在此半径内寻找
+				// 2.二每次开始搜索条件变为上一次开始时的终点坐标
 				if (pResi[uiX] != -1)
 				{
-					UInt uiDis = 0;
-					uiDis += getG0Bits(uiX - uiPreX);
-					uiDis += getG0Bits(uiY - uiPreX);
+					UInt uiDis = 0;									// 初始化当前距离
+					uiDis += getG0Bits(uiX - uiPreX);				// 0阶哥伦布编码
+					uiDis += getG0Bits(uiY - uiPreY);				// back up uiPreX 2016-02-18
 					if (uiDis < uiMinDis)
 					{
 						uiNextX = uiX;
 						uiNextY = uiY;
 						uiMinDis = uiDis;
+						dMinRadius = GetMinRadius(uiPreX, uiPreY, uiNextX, uiNextY);
 					}
 				}
+				if (uiX >(uiPreX + dMinRadius))
+				{
+					continue;
+				}
+				if (uiX > uiNextX && uiY > uiNextY
+					&& GetMinRadius(uiPreX, uiPreY, uiX, uiY) > dMinRadius && uiY > (uiPreY + dMinRadius))
+				{
+					//有用条件：uiY > (uiPreY + dMinRadius)
+					bStopForMark = true;
+					break;
+				}
 			}
-			pResi += uiStride;
+			pResi += uiStride;										// 指针跳到第二行
 		}
+
+
 		if (uiNextX != -1 && uiNextY != -1)
 		{
-			buffer[uiNumIdx*2] = uiNextX - uiPreX;
-			buffer[uiNumIdx * 2 + 1] = uiNextY - uiPreY;
+			*(buffer + (uiNumIdx * 2)) = uiNextX - uiPreX;
+			*(buffer + (uiNumIdx * 2 + 1)) = uiNextY - uiPreY;
 			uiPreX = uiNextX;
 			uiPreY = uiNextY;
 			// palette index
-			puiPLTIdx[uiNumIdx++] = *(piResi + uiNextY*uiStride + uiNextX);
-			*(piResi + uiNextY*uiStride + uiNextX) = -1;
+			*(puiPLTIdx + (uiNumIdx++)) = *(piResi + uiNextY*uiStride + uiNextX);		//调色板记录异常像素值
+			*(piResi + uiNextY*uiStride + uiNextX) = -1;			//本次找到的距离最小的点
 		}
 		else
 		{
-			bContinue = false;;
+			bContinue = false;
 		}
 	}
+
 	return;
 }
+
+//Void  PositionCode_PathLeast(TComYuv *pcResiYuv, const ComponentID compID, TCoeff* pcCoeff, UInt* puiPLTIdx, UInt& uiNumIdx)
+//{
+//	const ChannelType chType = toChannelType(compID);
+//	const UInt    uiWidth = pcResiYuv->getWidth(compID);
+//	const UInt    uiHeight = pcResiYuv->getHeight(compID);
+//	const UInt    uiStride = pcResiYuv->getStride(compID);
+//	Pel*    piResi = pcResiYuv->getAddr(compID);
+//	Pel*    pResi = piResi;
+//
+//	TCoeff  *buffer = pcCoeff;
+//
+//	int  indexlist[MAX_BUFFER][2];
+//	memset(indexlist, 0, sizeof(int)*MAX_BUFFER * 2);
+//
+//	uiNumIdx = 0;
+//	UInt uiPreX = 0;
+//	UInt uiPreY = 0;
+//	Bool bContinue = true;
+//
+//	while (bContinue)
+//	{
+//		UInt uiMinDis = 1000;
+//		UInt uiNextX = -1;
+//		UInt uiNextY = -1;
+//		pResi = piResi;
+//		for (UInt uiY = 0; uiY < uiHeight; uiY++)
+//		{
+//			for (UInt uiX = 0; uiX<uiWidth; uiX++)
+//			{
+//				assert(pResi[uiX] >-256 && pResi[uiX] < 256);
+//				if (pResi[uiX] != -1)
+//				{
+//					UInt uiDis = 0;
+//					uiDis += getG0Bits(uiX - uiPreX);
+//					uiDis += getG0Bits(uiY - uiPreX);
+//					if (uiDis < uiMinDis)
+//					{
+//						uiNextX = uiX;
+//						uiNextY = uiY;
+//						uiMinDis = uiDis;
+//					}
+//				}
+//			}
+//			pResi += uiStride;
+//		}
+//		if (uiNextX != -1 && uiNextY != -1)
+//		{
+//			buffer[uiNumIdx*2] = uiNextX - uiPreX;
+//			buffer[uiNumIdx * 2 + 1] = uiNextY - uiPreY;
+//			uiPreX = uiNextX;
+//			uiPreY = uiNextY;
+//			// palette index
+//			puiPLTIdx[uiNumIdx++] = *(piResi + uiNextY*uiStride + uiNextX);
+//			*(piResi + uiNextY*uiStride + uiNextX) = -1;
+//		}
+//		else
+//		{
+//			bContinue = false;;
+//		}
+//	}
+//	return;
+//}
 
 int compare4(const void * a, const void * b)
 {

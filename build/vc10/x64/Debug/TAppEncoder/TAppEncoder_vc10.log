@@ -1,16 +1,1 @@
-﻿Build started 2015/6/14 0:59:55.
-     1>Project "F:\Tsinghua\Work\Projects\hm16.4-pgr\build\vc10\TAppEncoder_vc10.vcxproj" on node 2 (Build target(s)).
-     1>Link:
-         C:\Program Files (x86)\Microsoft Visual Studio 12.0\VC\bin\x86_amd64\link.exe /ERRORREPORT:PROMPT /OUT:"F:\Tsinghua\Work\Projects\hm16.4-pgr\build\\..\bin\vc10\x64\Debug\TAppEncoder.exe" /INCREMENTAL /NOLOGO /LIBPATH:"C:\Program Files (x86)\Visual Leak Detector\lib\Win64" kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib odbc32.lib odbccp32.lib /MANIFEST /MANIFESTUAC:"level='asInvoker' uiAccess='false'" /manifest:embed /DEBUG /PDB:"F:\Tsinghua\Work\Projects\hm16.4-pgr\build\\..\bin\vc10\x64\Debug\TAppEncoder.pdb" /SUBSYSTEM:CONSOLE /TLBID:1 /DYNAMICBASE /NXCOMPAT /IMPLIB:"F:\Tsinghua\Work\Projects\hm16.4-pgr\build\\..\bin\vc10\x64\Debug\TAppEncoder.lib" /MACHINE:X64 "F:\Tsinghua\Work\Projects\hm16.4-pgr\build\\vc10\x64\Debug\TAppEncoder\encmain.obj"
-         "F:\Tsinghua\Work\Projects\hm16.4-pgr\build\\vc10\x64\Debug\TAppEncoder\TAppEncCfg.obj"
-         "F:\Tsinghua\Work\Projects\hm16.4-pgr\build\\vc10\x64\Debug\TAppEncoder\TAppEncTop.obj"
-         "F:\Tsinghua\Work\Projects\hm16.4-pgr\build\vc10\x64\Debug\TAppCommon\TAppCommon.lib"
-         "F:\Tsinghua\Work\Projects\hm16.4-pgr\build\vc10\x64\Debug\TLibCommon\TLibCommon.lib"
-         "F:\Tsinghua\Work\Projects\hm16.4-pgr\build\vc10\x64\Debug\TLibEncoder\TLibEncoder.lib"
-         "F:\Tsinghua\Work\Projects\hm16.4-pgr\build\vc10\x64\Debug\TLibVideoIo\TLibVideoIO.lib"
-         TAppEncoder_vc10.vcxproj -> F:\Tsinghua\Work\Projects\hm16.4-pgr\build\\..\bin\vc10\x64\Debug\TAppEncoder.exe
-     1>Done Building Project "F:\Tsinghua\Work\Projects\hm16.4-pgr\build\vc10\TAppEncoder_vc10.vcxproj" (Build target(s)).
-
-Build succeeded.
-
-Time Elapsed 00:00:01.35
+﻿

@@ -95,12 +95,10 @@ extern PixelTemplate* g_pLookupTable[MAX_NUM_COMPONENT][MAX_PT_NUM];
 //extern vector<PixelTemplate*>	g_pPixelTemplatePool;								///< convinient for releasing memory
 extern int g_auiTemplateOffset[21][2];
 
-extern TComPicYuv* g_pcYuvPred;
-extern TComPicYuv* g_pcYuvResi;
+//extern TComPicYuv* g_pcYuvPred;
+//extern TComPicYuv* g_pcYuvResi;
 extern TComPicYuv* g_pcYuvAbnormalResi;
 
-extern TCoeff *lumaCoef;
-extern TCoeff *lumaCoefR;
 
 extern Palette				g_ppPalette[MAX_NUM_COMPONENT];
 extern Palette				g_ppCTUPalette[MAX_NUM_COMPONENT];

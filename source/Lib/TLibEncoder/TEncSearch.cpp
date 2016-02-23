@@ -1955,12 +1955,18 @@ TEncSearch::xSetIntraResultLumaQT(TComYuv* pcRecoYuv, TComTU &rTu)
     UInt uiLog2TrSize = rTu.GetLog2LumaTrSize();
     UInt uiQTLayer    = pcCU->getSlice()->getSPS()->getQuadtreeTULog2MaxSize() - uiLog2TrSize;
 
+
+	TComYuv	*tmpResi = new TComYuv;
+	tmpResi->create(pcRecoYuv->getWidth(COMPONENT_Y), pcRecoYuv->getHeight(COMPONENT_Y), pcRecoYuv->getChromaFormat());
+	Pel					*piTmpResi = tmpResi->getAddr(COMPONENT_Y, uiAbsPartIdx);
+	UInt stride = pcRecoYuv->getStride(COMPONENT_Y);
+	QpParam cQP(*pcCU, COMPONENT_Y);
+
     //===== copy transform coefficients =====
 
     const TComRectangle &tuRect=rTu.getRect(COMPONENT_Y);
     const UInt coeffOffset = rTu.getCoefficientOffset(COMPONENT_Y);
     const UInt numCoeffInBlock = tuRect.width * tuRect.height;
-
     if (numCoeffInBlock!=0)
     {
       const TCoeff* srcCoeff = m_ppcQTTempCoeff[COMPONENT_Y][uiQTLayer] + coeffOffset;
@@ -1973,13 +1979,43 @@ TEncSearch::xSetIntraResultLumaQT(TComYuv* pcRecoYuv, TComTU &rTu)
       ::memcpy( destArlCoeff, srcArlCoeff, sizeof( TCoeff ) * numCoeffInBlock );
 #endif
       m_pcQTTempTComYuv[ uiQTLayer ].copyPartToPartComponent( COMPONENT_Y, pcRecoYuv, uiAbsPartIdx, tuRect.width, tuRect.height );
-    }
+
+	  m_pcTrQuant->invTransformNxN(rTu, COMPONENT_Y, piTmpResi, stride, destCoeff, cQP);
+	}
+	else
+	{
+		for (int y = 0; y < tuRect.height; y++)
+		{
+			for (int x = 0; x < tuRect.width; x++)
+			{
+				piTmpResi[y*stride + x] = 0;
+			}
+		}
+	}
+
+	Pel* pre = pcCU->getPic()->getPicYuvPred()->getAddr(COMPONENT_Y,pcCU->getCtuRsAddr(),uiAbsPartIdx);
+	UInt preStride = pcCU->getPic()->getPicYuvPred()->getStride(COMPONENT_Y);
+	Pel* reco = pcRecoYuv->getAddr(COMPONENT_Y);
+		//fstream fresi;
+		//fresi.open("enc_resi_y.txt", ios::app);
+		//for (int y = 0; y < tuRect.height; y++)
+		//{
+		//	for (int x = 0; x < tuRect.width; x++)
+		//	{
+		//		cout << pre[x] << "\t" <<piTmpResi[x] <<"\t"  <<reco[x] << endl;
+		//	}
+		//	piTmpResi += stride;
+		//	reco += stride;
+		//	pre += preStride;
+		//}
+		//fresi.close();
+	
 
   }
   else
   {
     TComTURecurse tuRecurseChild(rTu, false);
-    do
+    do  
     {
       xSetIntraResultLumaQT( pcRecoYuv, tuRecurseChild );
     } while (tuRecurseChild.nextSection(rTu));
@@ -2924,7 +2960,7 @@ Void TEncSearch::xRecurPGRLumaCodingQT(TComYuv*    pcOrgYuv,
 	const UInt    uiLog2TrSize = rTu.GetLog2LumaTrSize();
 	Bool    bCheckFull = (uiLog2TrSize <= pcCU->getSlice()->getSPS()->getQuadtreeTULog2MaxSize());
 	// wangzheng
-	Bool    bCheckSplit = (uiLog2TrSize > 5);// pcCU->getQuadtreeTULog2MinSizeInCU(uiAbsPartIdx));
+	Bool    bCheckSplit = (uiLog2TrSize > pcCU->getQuadtreeTULog2MinSizeInCU(uiAbsPartIdx));
 
 
 #if SCM_T0121_INFER_TU_SPLIT_ENCODER 
@@ -3098,12 +3134,20 @@ Void TEncSearch::xPGRCodingTUBlock( TComYuv*    pcOrgYuv,
 	Pel					 *piOrg = pcOrgYuv->getAddr(compID, uiAbsPartIdx);
 	Pel					 *piPred = pcPredYuv->getAddr(compID, uiAbsPartIdx);
 	Pel					 *piResi = pcResiYuv->getAddr(compID, uiAbsPartIdx);
-	Pel					 *piReco = pcPredYuv->getAddr(compID, uiAbsPartIdx);
+
+
+	//Pel					 *piReco = pcPredYuv->getAddr(compID, uiAbsPartIdx);
 
 	TComYuv	*tmpResi = new TComYuv;
 	tmpResi->create(pcResiYuv->getWidth(COMPONENT_Y), pcResiYuv->getHeight(COMPONENT_Y), pcResiYuv->getChromaFormat());
 	pcResiYuv->copyPartToComponent(compID, tmpResi, 0);
 	Pel					*piTmpResi = tmpResi->getAddr(compID, uiAbsPartIdx);
+
+	TComYuv	*tmpReco = new TComYuv;
+	tmpReco->create(pcPredYuv->getWidth(COMPONENT_Y), pcPredYuv->getHeight(COMPONENT_Y), pcPredYuv->getChromaFormat());
+	Pel					*piReco = tmpReco->getAddr(compID, uiAbsPartIdx);
+
+	//cout << pcCU->getCtuRsAddr() <<"\t"<< uiWidth<<"\t"<<uiHeight<<"\t"<<uiAbsPartIdx<<endl;
 
 	const UInt           uiQTLayer = sps.getQuadtreeTULog2MaxSize() - uiLog2TrSize;
 	Pel					 *piRecQt = m_pcQTTempTComYuv[uiQTLayer].getAddr(compID, uiAbsPartIdx);
@@ -3134,6 +3178,8 @@ Void TEncSearch::xPGRCodingTUBlock( TComYuv*    pcOrgYuv,
 #endif
 
 	QpParam cQP(*pcCU, compID);
+
+	//===== get residual signal =====
 
 	//===== transform and quantization =====
 	//--- init rate estimation arrays for RDOQ ---
@@ -3172,7 +3218,7 @@ Void TEncSearch::xPGRCodingTUBlock( TComYuv*    pcOrgYuv,
 	}
 	else
 	{
-		Pel* pResi = piTmpResi/*piResi*/;
+		Pel* pResi = piTmpResi;//piResi;
 		memset(pcCoeff, 0, sizeof(TCoeff)* uiWidth * uiHeight);
 		for (UInt uiY = 0; uiY < uiHeight; uiY++)
 		{
@@ -3201,32 +3247,32 @@ Void TEncSearch::xPGRCodingTUBlock( TComYuv*    pcOrgYuv,
 	//===== reconstruction =====
 	{
 		Pel* pPred = piPred;
-		Pel* pResi = piTmpResi/*piResi*/;
+		Pel* pResi = piTmpResi;// piResi;
 		Pel* pReco = piReco;
 		Pel* pRecQt = piRecQt;
 		Pel* pRecIPred = piRecIPred;
 		Pel* pOrg = piOrg;
-		Pel* pCResi = g_pcYuvResi->getAddr(compID, pcCU->getCtuRsAddr(), uiZOrder);
+		//Pel* pCResi = g_pcYuvResi->getAddr(compID, pcCU->getCtuRsAddr(), uiZOrder);
 		{
 			for (UInt uiY = 0; uiY < uiHeight; uiY++)
 			{
 				for (UInt uiX = 0; uiX < uiWidth; uiX++)
 				{
-					if ( pAbResi[uiX]!=-1)
-					{
-						UInt uiPLTIdx = pAbResi[uiX];
-						assert(uiPLTIdx < 4 && uiPLTIdx >= 0);
-						pReco[uiX] = Pel(ClipBD<Int>(Int(g_ppPalette[compID].m_pEntry[uiPLTIdx]) + Int(pResi[uiX]), bitDepth));
+					//if ( pAbResi[uiX]!=-1)
+					//{
+					//	UInt uiPLTIdx = pAbResi[uiX];
+					//	assert(uiPLTIdx < 4 && uiPLTIdx >= 0);
+					//	pReco[uiX] = Pel(ClipBD<Int>(Int(g_ppPalette[compID].m_pEntry[uiPLTIdx]) + Int(pResi[uiX]), bitDepth));
 
-					}
-					else
-					{
+					//}
+					//else
+					//{
 						pReco[uiX] = Pel(ClipBD<Int>(Int(pPred[uiX]) + Int(pResi[uiX]), bitDepth));
-					}
+					//}
 					pRecQt[uiX] = pReco[uiX];
 					pRecIPred[uiX] = pReco[uiX];
 
-					pCResi[uiX] = pResi[uiX];
+					//pCResi[uiX] = pResi[uiX];
 				}
 				pPred += uiStride;
 				pResi += uiStride;
@@ -3236,7 +3282,7 @@ Void TEncSearch::xPGRCodingTUBlock( TComYuv*    pcOrgYuv,
 				pRecIPred += uiRecIPredStride;
 				pAbResi += uiAbResiStride;
 
-				pCResi += uiRecIPredStride;
+				//pCResi += uiRecIPredStride;
 			}
 		}
 	}
@@ -3246,6 +3292,8 @@ Void TEncSearch::xPGRCodingTUBlock( TComYuv*    pcOrgYuv,
 
 	tmpResi->destroy();
 	delete tmpResi;
+	tmpReco->destroy();
+	delete tmpReco;
 }
 
 Void TEncSearch::estPGRChromaQT( TComDataCU* pcCU,

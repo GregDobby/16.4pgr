@@ -159,16 +159,16 @@ Void TDecCu::decodeCtu(TComDataCU* pCtu, Bool& isLastCtuOfSliceSegment)
 		setIsChromaQpAdjCoded(true);
 	}
 #if PGR_ENABLE
-	if (pCtu->getCtuRsAddr() == 0)
-	{
-		// encode palette
-		UInt uiNumValidComponents = pCtu->getPic()->getNumberValidComponents();
-		for (UInt ch = 0; ch < uiNumValidComponents; ch++)
-		{
-			ComponentID cId = ComponentID(ch);
-			m_pcEntropyDecoder->decodePalette(g_ppPalette[cId]);
-		}
-	}
+	//if (pCtu->getCtuRsAddr() == 0)
+	//{
+	//	// encode palette
+	//	UInt uiNumValidComponents = pCtu->getPic()->getNumberValidComponents();
+	//	for (UInt ch = 0; ch < uiNumValidComponents; ch++)
+	//	{
+	//		ComponentID cId = ComponentID(ch);
+	//		m_pcEntropyDecoder->decodePalette(g_ppPalette[cId]);
+	//	}
+	//}
 #endif
 	// start from the top level CU
 	xDecodeCU(pCtu, 0, 0, isLastCtuOfSliceSegment);
@@ -393,7 +393,7 @@ Void TDecCu::xDecodeCU(TComDataCU*const pcCU, const UInt uiAbsPartIdx, const UIn
 #endif
 
 #if PGR_ENABLE
-	m_pcEntropyDecoder->decodeRevision(pcCU, uiAbsPartIdx, uiDepth);
+	//m_pcEntropyDecoder->decodeRevision(pcCU, uiAbsPartIdx, uiDepth);
 #endif
 	// Coefficient decoding
 	Bool bCodeDQP = getdQPFlag();
@@ -401,7 +401,20 @@ Void TDecCu::xDecodeCU(TComDataCU*const pcCU, const UInt uiAbsPartIdx, const UIn
 	m_pcEntropyDecoder->decodeCoeff(pcCU, uiAbsPartIdx, uiDepth, bCodeDQP, isChromaQpAdjCoded);
 	setIsChromaQpAdjCoded(isChromaQpAdjCoded);
 	setdQPFlag(bCodeDQP);
-
+	
+	UInt width = *pcCU->getWidth()>>uiDepth;
+	UInt height = *pcCU->getHeight()>>uiDepth;
+	fstream f;
+	f.open("dec_coeff.txt", ios::app);
+	TCoeff* p = pcCU->getCoeff(ComponentID(0));
+	for (UInt x = 0; x < width; x++)
+	{
+		for (UInt y = 0; y < height; y++)
+		{
+			f << p[y*width + x] << endl;
+		}
+	}
+	f.close();
 	
 
 	xFinishDecodeCU(pcCU, uiAbsPartIdx, uiDepth, isLastCtuOfSliceSegment);
@@ -482,6 +495,7 @@ Void TDecCu::xDecompressCU(TComDataCU* pCtu, UInt uiAbsPartIdx, UInt uiDepth)
 
 #if PGR_ENABLE
 		xReconPGRQT(m_ppcCU[uiDepth], uiDepth);
+
 #else
 		xReconIntraQT(m_ppcCU[uiDepth], uiDepth);
 #endif
@@ -581,6 +595,41 @@ Void TDecCu::xReconPGRQT(TComDataCU* pcCU, UInt uiDepth)
 		{
 			xPGRRecQT(m_ppcYuvReco[uiDepth], m_ppcYuvReco[uiDepth], m_ppcYuvResi[uiDepth], chanType, tuRecurseWithPU);
 		} while (tuRecurseWithPU.nextSection(tuRecurseCU));
+
+		//fstream frec;
+		//frec.open("dec_rec_y.txt", ios::app);
+		//int h, w;
+		//h = m_ppcYuvReco[uiDepth]->getHeight(COMPONENT_Y);
+		//w = m_ppcYuvReco[uiDepth]->getWidth(COMPONENT_Y);
+		//Pel* src = m_ppcYuvReco[uiDepth]->getAddr(COMPONENT_Y, 0, w);
+		//int stride = m_ppcYuvReco[uiDepth]->getStride(COMPONENT_Y);
+		//for (int y = 0; y < h; y++)
+		//{ 
+		//	for (int x = 0; x < w; x++)
+		//	{
+		//		frec << src[x] << endl;
+		//	}
+		//	src += stride;
+		//}
+		//frec.close();
+		//m_ppcYuvResi[uiDepth]->copyToPicComponent(ComponentID(chType), g_pcYuvResi, pcCU->getCtuRsAddr(), pcCU->getZorderIdxInCtu());
+
+		//fstream fresi;
+		//fresi.open("dec_resi_y.txt", ios::app);
+		//int h, w;
+		//h = m_ppcYuvResi[uiDepth]->getHeight(COMPONENT_Y);
+		//w = m_ppcYuvResi[uiDepth]->getWidth(COMPONENT_Y);
+		//Pel* src = m_ppcYuvResi[uiDepth]->getAddr(COMPONENT_Y, 0, w);
+		//int stride = m_ppcYuvResi[uiDepth]->getStride(COMPONENT_Y);
+		//for (int y = 0; y < h; y++)
+		//{
+		//	for (int x = 0; x < w; x++)
+		//	{
+		//		fresi << src[x] << endl;
+		//	}
+		//	src += stride;
+		//}
+		//fresi.close();
 	}
 }
 
@@ -690,7 +739,20 @@ Void TDecCu::xPGRRecBlk(TComYuv* pcRecoYuv, TComYuv* pcPredYuv, TComYuv* pcResiY
 			}
 		}
 	}
-
+	if (compID == COMPONENT_Y)
+	{
+		fstream fresi;
+		fresi.open("dec_resi_y.txt", ios::app);
+		for (UInt y = 0; y < uiHeight; y++)
+		{
+			for (UInt x = 0; x < uiWidth; x++)
+			{
+				fresi << piResi[(y * uiStride) + x] << endl;;
+			}
+		}
+		fresi.close();
+	}
+	
 
 
 #ifdef DEBUG_STRING
@@ -708,9 +770,9 @@ Void TDecCu::xPGRRecBlk(TComYuv* pcRecoYuv, TComYuv* pcPredYuv, TComYuv* pcResiY
 	Pel* pReco = pcRecoYuv->getAddr(compID, uiAbsPartIdx);
 	Pel* pRecIPred = pcCU->getPic()->getPicYuvRec()->getAddr(compID, pcCU->getCtuRsAddr(), pcCU->getZorderIdxInCtu() + uiAbsPartIdx);
 
-	Pel* pAbnormalResi = g_pcYuvAbnormalResi->getAddr(compID, pcCU->getCtuRsAddr(), pcCU->getZorderIdxInCtu() + uiAbsPartIdx);
+	//Pel* pAbnormalResi = g_pcYuvAbnormalResi->getAddr(compID, pcCU->getCtuRsAddr(), pcCU->getZorderIdxInCtu() + uiAbsPartIdx);
 
-	Pel* pCResi = g_pcYuvResi->getAddr(compID, pcCU->getCtuRsAddr(), pcCU->getZorderIdxInCtu() + uiAbsPartIdx);
+//	Pel* pCResi = g_pcYuvResi->getAddr(compID, pcCU->getCtuRsAddr(), pcCU->getZorderIdxInCtu() + uiAbsPartIdx);
 
 	const Int clipbd = sps.getBitDepth(toChannelType(compID));
 #if O0043_BEST_EFFORT_DECODING
@@ -726,26 +788,26 @@ Void TDecCu::xPGRRecBlk(TComYuv* pcRecoYuv, TComYuv* pcPredYuv, TComYuv* pcResiY
 			pReco[uiX] = ClipBD(rightShiftEvenRounding<Pel>(pPred[uiX] + pResi[uiX], bitDepthDelta), clipbd);
 #else
 #if PGR_ENABLE
-			assert(pAbnormalResi[uiX] == -1 || pAbnormalResi[uiX] < 4 && pAbnormalResi[uiX] >= 0);
-			if (pAbnormalResi[uiX] == -1)
+//			assert(pAbnormalResi[uiX] == -1 || pAbnormalResi[uiX] < 4 && pAbnormalResi[uiX] >= 0);
+//			if (pAbnormalResi[uiX] == -1)
 				pReco[uiX] = ClipBD(pPred[uiX] + pResi[uiX], clipbd);
-			else
-				pReco[uiX] = ClipBD(g_ppPalette[compID].m_pEntry[pAbnormalResi[uiX]] + pResi[uiX], clipbd);
+	//		else
+	//   			pReco[uiX] = ClipBD(g_ppPalette[compID].m_pEntry[pAbnormalResi[uiX]] + pResi[uiX], clipbd);
 #else
 			pReco[uiX] = ClipBD(pPred[uiX] + pResi[uiX], clipbd);
 #endif
 #endif
 			pRecIPred[uiX] = pReco[uiX];
 
-			pCResi[uiX] = pResi[uiX];
+			//pCResi[uiX] = pResi[uiX];
 		}
 		pPred += uiRecIPredStride;
 		pResi += uiStride;
 		pReco += uiStride;
 		pRecIPred += uiRecIPredStride;
-		pAbnormalResi += uiRecIPredStride;
+		//pAbnormalResi += uiRecIPredStride;
 
-		pCResi += uiRecIPredStride;
+		//pCResi += uiRecIPredStride;
 	}
 }
 

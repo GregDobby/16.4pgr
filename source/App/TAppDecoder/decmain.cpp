@@ -63,7 +63,7 @@ int main(int argc, char* argv[])
   // create application decoder class
   cTAppDecTop.create();
 
-  // parse configuration
+  // parse configuration 
   if(!cTAppDecTop.parseCfg( argc, argv ))
   {
     cTAppDecTop.destroy();

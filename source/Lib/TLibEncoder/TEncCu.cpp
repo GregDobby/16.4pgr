@@ -67,13 +67,16 @@ Void  TEncCu::createPGR(UInt uiPicWidth, UInt uiPicHeight, ChromaFormat chromaFo
 		g_pcYuvAbnormalResi = new TComPicYuv;
 		g_pcYuvAbnormalResi->create(uiPicWidth, uiPicHeight, chromaFormat, uiMaxCuWidth, uiMaxCuHeight, uiTotalCuDepth, true);
 	}
-	if (g_pcYuvPred == NULL)
-	{
-		g_pcYuvPred = new TComPicYuv;
-		g_pcYuvPred->create(uiPicWidth, uiPicHeight, chromaFormat, uiMaxCuWidth, uiMaxCuHeight, uiTotalCuDepth, true);
-	}
-	g_pcYuvResi = new TComPicYuv;
-	g_pcYuvResi->create(uiPicWidth, uiPicHeight, chromaFormat, uiMaxCuWidth, uiMaxCuHeight, uiTotalCuDepth, true);
+	//if (g_pcYuvPred == NULL)
+	//{
+	//	g_pcYuvPred = new TComPicYuv;
+	//	g_pcYuvPred->create(uiPicWidth, uiPicHeight, chromaFormat, uiMaxCuWidth, uiMaxCuHeight, uiTotalCuDepth, true);
+	//}
+	//if (g_pcYuvResi == NULL)
+	//{
+	//	g_pcYuvResi = new TComPicYuv;
+	//	g_pcYuvResi->create(uiPicWidth, uiPicHeight, chromaFormat, uiMaxCuWidth, uiMaxCuHeight, uiTotalCuDepth, true);
+	//}
 }
 
 Void  TEncCu::initEstPGR(TComPic* pcPic)
@@ -421,7 +424,7 @@ Void TEncCu::compressCtu(TComDataCU* pCtu, UChar* lastPLTSize, UChar* lastPLTUse
 	else
 		xCompressCU(m_ppcBestCU[0], m_ppcTempCU[0], 0 DEBUG_STRING_PASS_INTO(sDebug));
 	end = clock();
-	cout << end - start << endl;
+	//cout << end - start << endl;
 
 #else
 		xCompressCU( m_ppcBestCU[0], m_ppcTempCU[0], 0 DEBUG_STRING_PASS_INTO(sDebug) );
@@ -453,16 +456,16 @@ Void TEncCu::encodeCtu(TComDataCU* pCtu)
 		setCodeChromaQpAdjFlag(true);
 	}
 #if PGR_ENABLE
-	if (pCtu->getCtuRsAddr() == 0)
-	{
-		// encode palette
-		UInt uiNumValidComponents = pCtu->getPic()->getNumberValidComponents();
-		for (UInt ch = 0; ch < uiNumValidComponents; ch++)
-		{
-			ComponentID cId = ComponentID(ch);
-			m_pcEntropyCoder->encodePalette(g_ppPalette[cId]);
-		}
-	}
+	//if (pCtu->getCtuRsAddr() == 0)
+	//{
+	//	// encode palette
+	//	UInt uiNumValidComponents = pCtu->getPic()->getNumberValidComponents();
+	//	for (UInt ch = 0; ch < uiNumValidComponents; ch++)
+	//	{
+	//		ComponentID cId = ComponentID(ch);
+	//		m_pcEntropyCoder->encodePalette(g_ppPalette[cId]);
+	//	}
+	//}
 #endif
 	// Encode CU data
 	xEncodeCU(pCtu, 0, 0);
@@ -1902,15 +1905,18 @@ Void TEncCu::xCheckPRGResidue(TComDataCU*& rpcBestCU, TComDataCU*& rpcTempCU, UI
 
 		m_ppcOrigYuv[uiDepth]->copyFromPicYuv(rpcTempCU->getPic()->getPicYuvOrg(), rpcBestCU->getCtuRsAddr(), rpcBestCU->getZorderIdxInCtu());
 		m_ppcPredYuvTemp[uiDepth]->copyFromPicYuv(rpcTempCU->getPic()->getPicYuvPred(), rpcTempCU->getCtuRsAddr(), rpcTempCU->getZorderIdxInCtu());
+
 		m_ppcResiYuvTemp[uiDepth]->copyFromPicYuv(rpcTempCU->getPic()->getPicYuvResi(), rpcTempCU->getCtuRsAddr(), rpcTempCU->getZorderIdxInCtu());
 
 		// ---- revise anomaly residue using different methods ----
-		reviseAnomalyResidue(rpcTempCU, m_ppcOrigYuv[uiDepth], m_ppcPredYuvTemp[uiDepth], m_ppcResiYuvTemp[uiDepth], m_ppcAbnormalResiYuvTemp[uiDepth], uiResiThreshold);
+		//reviseAnomalyResidue(rpcTempCU, m_ppcOrigYuv[uiDepth], m_ppcPredYuvTemp[uiDepth], m_ppcResiYuvTemp[uiDepth], m_ppcAbnormalResiYuvTemp[uiDepth], uiResiThreshold);
 		 
 		// coefficients
 		m_pcPredSearch->estPGRLumaQT(rpcTempCU, m_ppcOrigYuv[uiDepth], m_ppcPredYuvTemp[uiDepth], m_ppcResiYuvTemp[uiDepth], m_ppcRecoYuvTemp[uiDepth]);
 
 		m_ppcRecoYuvTemp[uiDepth]->copyToPicComponent(COMPONENT_Y, rpcTempCU->getPic()->getPicYuvRec(), rpcTempCU->getCtuRsAddr(), rpcTempCU->getZorderIdxInCtu());
+		
+		
 
 		if (rpcBestCU->getPic()->getChromaFormat() != CHROMA_400)
 		{
@@ -1934,7 +1940,7 @@ Void TEncCu::xCheckPRGResidue(TComDataCU*& rpcBestCU, TComDataCU*& rpcTempCU, UI
 			m_pcEntropyCoder->encodeIntraBCFlag(rpcTempCU, 0, true);
 		}
 #endif
-		m_pcEntropyCoder->encodeRevison(rpcTempCU,0,uiDepth);
+		//m_pcEntropyCoder->encodeRevison(rpcTempCU,0,uiDepth);
 		// Encode Coefficients
 		Bool bCodeDQP = getdQPFlag();
 		Bool codeChromaQpAdjFlag = getCodeChromaQpAdjFlag();
@@ -2228,7 +2234,7 @@ Void TEncCu::xEncodeCU(TComDataCU* pcCU, UInt uiAbsPartIdx, UInt uiDepth)
 #endif
 
 #if PGR_ENABLE
-	m_pcEntropyCoder->encodeRevison(pcCU, uiAbsPartIdx, uiDepth);
+	//m_pcEntropyCoder->encodeRevison(pcCU, uiAbsPartIdx, uiDepth);
 #endif
 	// Encode Coefficients
 	Bool bCodeDQP = getdQPFlag();
@@ -2236,6 +2242,20 @@ Void TEncCu::xEncodeCU(TComDataCU* pcCU, UInt uiAbsPartIdx, UInt uiDepth)
 	m_pcEntropyCoder->encodeCoeff(pcCU, uiAbsPartIdx, uiDepth, bCodeDQP, codeChromaQpAdj);
 	setCodeChromaQpAdjFlag(codeChromaQpAdj);
 	setdQPFlag(bCodeDQP);
+
+	UInt width = *pcCU->getWidth()>>uiDepth;
+	UInt height = *pcCU->getHeight()>>uiDepth;
+	fstream f;
+	f.open("enc_coeff.txt", ios::app);
+	TCoeff* p = pcCU->getCoeff(ComponentID(0));
+	for (UInt x = 0; x < width; x++)
+	{
+		for (UInt y = 0; y < height; y++)
+		{
+			f << p[y*width + x] << endl;
+		}
+	}
+	f.close();
 
 	// --- write terminating bit ---
 	finishCU(pcCU, uiAbsPartIdx, uiDepth);

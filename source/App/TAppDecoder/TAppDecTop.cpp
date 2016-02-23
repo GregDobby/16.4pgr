@@ -388,6 +388,7 @@ Void TAppDecTop::xWriteOutput( TComList<TComPic*>* pcListPic, UInt tId )
                                            conf.getWindowRightOffset() + defDisp.getWindowRightOffset(),
                                            conf.getWindowTopOffset() + defDisp.getWindowTopOffset(),
                                            conf.getWindowBottomOffset() + defDisp.getWindowBottomOffset(), NUM_CHROMA_FORMAT, isTff );
+
           }
         }
 

@@ -1,13 +1,1 @@
-﻿Build started 2015/6/14 0:52:01.
-     1>Project "F:\Tsinghua\Work\Projects\hm16.4-pgr\build\vc10\TAppCommon_vc10.vcxproj" on node 2 (Build target(s)).
-     1>ClCompile:
-         C:\Program Files (x86)\Microsoft Visual Studio 12.0\VC\bin\x86_amd64\CL.exe /c /I"F:\Tsinghua\Work\Projects\hm16.4-pgr\build\\..\source\Lib\\" /I"F:\Tsinghua\Work\Projects\hm16.4-pgr\build\\..\compat\msvc" /I"C:\Program Files (x86)\Visual Leak Detector\include" /Zi /nologo /W3 /WX- /Od /D WIN32 /D _DEBUG /D _LIB /D _CRT_SECURE_NO_WARNINGS /D _MBCS /Gm /EHsc /RTC1 /MTd /GS /fp:precise /Zc:wchar_t /Zc:forScope /Fo"F:\Tsinghua\Work\Projects\hm16.4-pgr\build\\vc10\x64\Debug\TAppCommon\\" /Fd"F:\Tsinghua\Work\Projects\hm16.4-pgr\build\\vc10\x64\Debug\TAppCommon\vc120.pdb" /Gd /TP /errorReport:prompt ..\..\source\Lib\TAppCommon\program_options_lite.cpp
-         program_options_lite.cpp
-       Lib:
-         C:\Program Files (x86)\Microsoft Visual Studio 12.0\VC\bin\x86_amd64\Lib.exe /OUT:"F:\Tsinghua\Work\Projects\hm16.4-pgr\build\\vc10\x64\Debug\TAppCommon\TAppCommon.lib" /LIBPATH:"C:\Program Files (x86)\Visual Leak Detector\lib\Win64" /NOLOGO /MACHINE:X64 "F:\Tsinghua\Work\Projects\hm16.4-pgr\build\\vc10\x64\Debug\TAppCommon\program_options_lite.obj"
-         TAppCommon_vc10.vcxproj -> F:\Tsinghua\Work\Projects\hm16.4-pgr\build\\vc10\x64\Debug\TAppCommon\TAppCommon.lib
-     1>Done Building Project "F:\Tsinghua\Work\Projects\hm16.4-pgr\build\vc10\TAppCommon_vc10.vcxproj" (Build target(s)).
-
-Build succeeded.
-
-Time Elapsed 00:00:01.39
+﻿

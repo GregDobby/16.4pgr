@@ -1249,7 +1249,7 @@ Void TEncGOP::compressGOP(Int iPOCLast, Int iNumPicRcvd, TComList<TComPic*>& rcL
 			pcPic->getPicYuvOrg()->resample(pcSlice->getSPS()->getMaxCUWidth(), pcSlice->getSPS()->getMaxCUHeight(), false);
 
 			// derive global palette
-			derivePGRGlobalPLT(pcPic->getPicYuvOrg());
+			//derivePGRGlobalPLT(pcPic->getPicYuvOrg());
 		}
 #endif
 
@@ -1678,6 +1678,44 @@ Void TEncGOP::compressGOP(Int iPOCLast, Int iNumPicRcvd, TComList<TComPic*>& rcL
 			}
 		}
 
+		//vector<vector<float>> resiStat(3,vector<float>(511, 0));
+		//int tmpHeight = pcSlice->getSPS()->getPicHeightInLumaSamples();
+		//int tmpWidth = pcSlice->getSPS()->getPicWidthInLumaSamples();
+		//TComPicYuv* pcPred =  pcSlice->getPic()->getPicYuvPred();
+		//TComPicYuv* pcOrg = pcSlice->getPic()->getPicYuvOrg();
+		//for (int ch = 0; ch < 3; ch++)
+		//{
+		//	ComponentID cId = ComponentID(ch);
+		//	Int stride = pcPred->getStride(cId);
+		//	Pel* pre = pcPred->getAddr(cId);
+		//	Pel* org = pcOrg->getAddr(cId);
+		//	for (int y = 0; y < tmpHeight; y++)
+		//	{
+		//		for (int x = 0; x < tmpWidth; x++)
+		//		{
+		//			int resi = org[x] - pre[x];
+		//			resiStat[ch][resi+255]+=1;
+		//		}
+		//		pre += stride;
+		//		org += stride;
+		//	}
+		//}
+		//long aveabs[3];
+		//for (int i = 0; i < 511; i++)
+		//{
+		//	for (int ch = 0; ch < 3; ch++)
+		//	{
+		//		aveabs[ch] += abs(i - 255)*resiStat[ch][i];
+		//		resiStat[ch][i] /= tmpHeight*tmpWidth;
+		//	}
+
+		//	cout << i - 255 << ":" << resiStat[0][i] << "\t" << resiStat[1][i] << "\t" << resiStat[2][i] << endl;
+		//}
+		//for (int ch = 0; ch < 3; ch++)
+		//{
+		//	aveabs[ch] /= tmpHeight*tmpWidth;
+		//}
+		//cout << "abs average:" << ":" << aveabs[0] << "\t" << aveabs[1] << "\t" << aveabs[2] << endl;
 		duData.clear();
 		pcSlice = pcPic->getSlice(0);
 
