@@ -4,6 +4,7 @@
 #include "TLibCommon\TypeDef.h"
 #include "TComPicYuv.h"
 #include "TComDataCU.h"
+#include "TComQuadTree.h"
 
 //#include "TComPic.h"
 //#include "TypeDef.h"
@@ -23,6 +24,8 @@ using namespace std;
 #define MAX_BUFFER 4096
 #define INSERT_LIMIT 5
 #define LIST_LIMIT 10
+
+
 // ======== Structures ========
 
 // ---- Template Matching ----
@@ -61,6 +64,7 @@ enum TemplateState
 	DISPLACE = 1,
 	TO_BE_REMOVED = 2
 };
+
 typedef struct _PixelTemplate {
 	UInt m_PX;
 	UInt m_PY;
@@ -72,6 +76,8 @@ typedef struct _PixelTemplate {
 	_PixelTemplate * m_pptNext;
 	_PixelTemplate(UInt uiX, UInt uiY, UInt uiHashValue1,UInt uiHashValue2,UInt uiNumTemplate,UInt uiState) :m_PX(uiX), m_PY(uiY), m_uiNumUsed(0), m_uiHashValue1(uiHashValue1),m_uiHashValue2(uiHashValue2), m_uiNumTemplate(uiNumTemplate),m_uiState(uiState), m_pptNext(NULL){};
 
+	double m_uiAve;
+	UInt m_uiCount;
 } PixelTemplate, *PPixelTemplate;
 
 typedef struct _Palette
@@ -86,17 +92,20 @@ typedef struct _Palette
 extern vector<UInt> g_auiOrgToRsmpld[MAX_NUM_COMPONENT][2];			// 0->x,1->y
 extern vector<UInt> g_auiRsmpldToOrg[MAX_NUM_COMPONENT][2];
 
+
 extern int g_auiTemplateOffset[21][2];
 
-
-extern PixelTemplate* g_pLookupTable[MAX_NUM_COMPONENT][MAX_PT_NUM];
+extern CQuadTree* g_quadTree[MAX_NUM_COMPONENT];
+extern unordered_set<UInt> g_newHashValues[MAX_NUM_COMPONENT];
+extern UInt g_window;
+//extern PixelTemplate* g_pLookupTable[MAX_NUM_COMPONENT][MAX_PT_NUM];
 
 //extern PixelTemplate*	g_pPixelTemplate[MAX_NUM_COMPONENT][MAX_PT_NUM];	        ///< hash table
 //extern vector<PixelTemplate*>	g_pPixelTemplatePool;								///< convinient for releasing memory
 extern int g_auiTemplateOffset[21][2];
 
 //extern TComPicYuv* g_pcYuvPred;
-//extern TComPicYuv* g_pcYuvResi;
+extern TComPicYuv* g_pcYuvResi;
 extern TComPicYuv* g_pcYuvAbnormalResi;
 
 
@@ -113,15 +122,27 @@ Void initCoordinateMap(UInt uiSourceWidth, UInt uiSourceHeight, UInt uiMaxCUWidt
 
 // template matching
 
-Void matchTemplate(TComDataCU*& rpcTempCU, Pixel** ppPixel);
+//Void matchTemplate(TComDataCU*& rpcTempCU, Pixel** ppPixel);
+
+// template matching using quad tree
+Void matchTemplateQuadTree(TComDataCU* rpcTempCU);
+
+Void updateQuadTree(TComDataCU* pCtu);
+
 
 Void updatePixel(TComDataCU* pCtu, Pixel** ppPixel);
 
-inline UInt getSerialIndex(UInt uiX, UInt uiY, UInt uiPicWidth);
+UInt getSerialIndex(UInt uiX, UInt uiY, UInt uiPicWidth);
 
 Void getNeighbors(UInt uiX, UInt uiY, UInt uiPicWidth, Pixel* pPixel, Pixel* vTemplate);
 
 Void getHashValue(UInt uiX, UInt uiY, UInt uiPicWidth, Pixel* pPixel, UInt& uiHashValue1, UInt& uiHashValue2);
+
+UInt getHashvalue(UInt aTemplate[]);
+
+Void getTemplate(UInt aTemplate[], TComPicYuv* pcRecoYuv, ComponentID cId, UInt uiOrgX, UInt uiOrgY);
+
+UInt getTemplateDiff(UInt t1[], UInt t2[]);
 
 Void tryMatch(UInt uiX, UInt uiY, UInt uiCX, UInt uiCY, MatchMetric &mmMatchMetric, UInt uiPicWidth, Pixel* pPixel);
 

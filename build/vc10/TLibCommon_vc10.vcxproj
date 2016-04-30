@@ -148,6 +148,7 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="..\..\source\Lib\libmd5\libmd5.c" />
+    <ClCompile Include="..\..\source\Lib\TLibCommon\BlockTemplate.cpp" />
     <ClCompile Include="..\..\source\Lib\TLibCommon\ContextModel.cpp" />
     <ClCompile Include="..\..\source\Lib\TLibCommon\ContextModel3DBuffer.cpp" />
     <ClCompile Include="..\..\source\Lib\TLibCommon\Debug.cpp" />
@@ -167,6 +168,7 @@
     <ClCompile Include="..\..\source\Lib\TLibCommon\TComPicYuv.cpp" />
     <ClCompile Include="..\..\source\Lib\TLibCommon\TComPicYuvMD5.cpp" />
     <ClCompile Include="..\..\source\Lib\TLibCommon\TComPrediction.cpp" />
+    <ClCompile Include="..\..\source\Lib\TLibCommon\TComQuadTree.cpp" />
     <ClCompile Include="..\..\source\Lib\TLibCommon\TComRdCost.cpp" />
     <ClCompile Include="..\..\source\Lib\TLibCommon\TComRdCostWeightPrediction.cpp" />
     <ClCompile Include="..\..\source\Lib\TLibCommon\TComRom.cpp" />
@@ -181,6 +183,7 @@
     <ClInclude Include="..\..\source\Lib\libmd5\libmd5.h" />
     <ClInclude Include="..\..\source\Lib\libmd5\MD5.h" />
     <ClInclude Include="..\..\source\Lib\TLibCommon\AccessUnit.h" />
+    <ClInclude Include="..\..\source\Lib\TLibCommon\BlockTemplate.h" />
     <ClInclude Include="..\..\source\Lib\TLibCommon\CommonDef.h" />
     <ClInclude Include="..\..\source\Lib\TLibCommon\ContextModel.h" />
     <ClInclude Include="..\..\source\Lib\TLibCommon\ContextModel3DBuffer.h" />
@@ -217,6 +220,7 @@
     <ClInclude Include="..\..\source\Lib\TLibCommon\TComWeightPrediction.h" />
     <ClInclude Include="..\..\source\Lib\TLibCommon\TComYuv.h" />
     <ClInclude Include="..\..\source\Lib\TLibCommon\TypeDef.h" />
+    <ClInclude Include="helper.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

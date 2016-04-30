@@ -98,6 +98,12 @@
     <ClCompile Include="..\..\source\Lib\TLibCommon\PixelPrediction.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\source\Lib\TLibCommon\TComQuadTree.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\source\Lib\TLibCommon\BlockTemplate.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\source\Lib\TLibCommon\AccessUnit.h">
@@ -215,6 +221,12 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="..\..\source\Lib\TLibCommon\PixelPrediction.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="helper.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\source\Lib\TLibCommon\BlockTemplate.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

@@ -1956,9 +1956,9 @@ TEncSearch::xSetIntraResultLumaQT(TComYuv* pcRecoYuv, TComTU &rTu)
     UInt uiQTLayer    = pcCU->getSlice()->getSPS()->getQuadtreeTULog2MaxSize() - uiLog2TrSize;
 
 
-	TComYuv	*tmpResi = new TComYuv;
-	tmpResi->create(pcRecoYuv->getWidth(COMPONENT_Y), pcRecoYuv->getHeight(COMPONENT_Y), pcRecoYuv->getChromaFormat());
-	Pel					*piTmpResi = tmpResi->getAddr(COMPONENT_Y, uiAbsPartIdx);
+	//TComYuv	*tmpResi = new TComYuv;
+	//tmpResi->create(pcRecoYuv->getWidth(COMPONENT_Y), pcRecoYuv->getHeight(COMPONENT_Y), pcRecoYuv->getChromaFormat());
+	//Pel					*piTmpResi = tmpResi->getAddr(COMPONENT_Y, uiAbsPartIdx);
 	UInt stride = pcRecoYuv->getStride(COMPONENT_Y);
 	QpParam cQP(*pcCU, COMPONENT_Y);
 
@@ -1980,22 +1980,22 @@ TEncSearch::xSetIntraResultLumaQT(TComYuv* pcRecoYuv, TComTU &rTu)
 #endif
       m_pcQTTempTComYuv[ uiQTLayer ].copyPartToPartComponent( COMPONENT_Y, pcRecoYuv, uiAbsPartIdx, tuRect.width, tuRect.height );
 
-	  m_pcTrQuant->invTransformNxN(rTu, COMPONENT_Y, piTmpResi, stride, destCoeff, cQP);
+	  //m_pcTrQuant->invTransformNxN(rTu, COMPONENT_Y, piTmpResi, stride, destCoeff, cQP);
 	}
-	else
-	{
-		for (int y = 0; y < tuRect.height; y++)
-		{
-			for (int x = 0; x < tuRect.width; x++)
-			{
-				piTmpResi[y*stride + x] = 0;
-			}
-		}
-	}
+	//else
+	//{
+	//	for (int y = 0; y < tuRect.height; y++)
+	//	{
+	//		for (int x = 0; x < tuRect.width; x++)
+	//		{
+	//			piTmpResi[y*stride + x] = 0;
+	//		}
+	//	}
+	//}
 
-	Pel* pre = pcCU->getPic()->getPicYuvPred()->getAddr(COMPONENT_Y,pcCU->getCtuRsAddr(),uiAbsPartIdx);
-	UInt preStride = pcCU->getPic()->getPicYuvPred()->getStride(COMPONENT_Y);
-	Pel* reco = pcRecoYuv->getAddr(COMPONENT_Y);
+	//Pel* pre = pcCU->getPic()->getPicYuvPred()->getAddr(COMPONENT_Y,pcCU->getCtuRsAddr(),uiAbsPartIdx);
+	//UInt preStride = pcCU->getPic()->getPicYuvPred()->getStride(COMPONENT_Y);
+	//Pel* reco = pcRecoYuv->getAddr(COMPONENT_Y);
 		//fstream fresi;
 		//fresi.open("enc_resi_y.txt", ios::app);
 		//for (int y = 0; y < tuRect.height; y++)

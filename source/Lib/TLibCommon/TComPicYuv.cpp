@@ -108,6 +108,9 @@ Void TComPicYuv::create ( const Int iPicWidth,                ///< picture width
     {
       const ComponentID ch=ComponentID(chan);
       m_apiPicBuf[chan] = (Pel*)xMalloc( Pel, getStride(ch)       * getTotalHeight(ch));
+
+	  memset(m_apiPicBuf[chan], 0, getStride(ch)       * getTotalHeight(ch)*sizeof(Pel));
+
       m_piPicOrg[chan]  = m_apiPicBuf[chan] + (m_iMarginY >> getComponentScaleY(ch))   * getStride(ch)       + (m_iMarginX >> getComponentScaleX(ch));
     }
     for(;chan<MAX_NUM_COMPONENT; chan++)
@@ -371,16 +374,7 @@ Void TComPicYuv::resample(UInt uiMaxCUWidth, UInt uiMaxCUHeight, Bool bInverse)
 		UInt uiPicStride = getStride(cId);			// picture width with margin for a certain component
 		UInt uiPicWidth = getWidth(cId);			// picture width without margin for a certain component
 		UInt uiPicHeight = getHeight(cId);			// picture height without margin for a certain component
-		
-		UInt uiStrideX = uiPicWidth / uiMaxCUWidth;			// sample stride in horizontal direction as well as the number of intact CUs in a row
-		UInt uiStrideY = m_iPicHeight / uiMaxCUHeight;		// sample stride in vertical direction as well as the number of intact CUs in a column
-		
-		UInt uiStrideXplus1 = uiStrideX + 1;
-		UInt uiStrideYplus1 = uiStrideY + 1;
 
-		UInt uiNumberUseBiggerStrideX = uiPicWidth % uiMaxCUWidth;		// number of bigger strides in x direction
-		UInt uiNumberUseBiggerStrideY = uiPicHeight % uiMaxCUHeight;	// number of bigger strides in y direction
-		
 		// allocate  pixels memory
 		Pel *piPicTmpBuf, *piPicTmpOrg;
 		piPicTmpBuf = (Pel*)xMalloc(Pel,uiPicStride*getTotalHeight(cId));															

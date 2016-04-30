@@ -40,6 +40,7 @@
 #include "TEncCu.h"
 #include "TEncAnalyze.h"
 #include "TLibCommon/Debug.h"
+#include "TLibCommon/BlockTemplate.h"
 
 #include <cmath>
 #include <algorithm>
@@ -72,11 +73,11 @@ Void  TEncCu::createPGR(UInt uiPicWidth, UInt uiPicHeight, ChromaFormat chromaFo
 	//	g_pcYuvPred = new TComPicYuv;
 	//	g_pcYuvPred->create(uiPicWidth, uiPicHeight, chromaFormat, uiMaxCuWidth, uiMaxCuHeight, uiTotalCuDepth, true);
 	//}
-	//if (g_pcYuvResi == NULL)
-	//{
-	//	g_pcYuvResi = new TComPicYuv;
-	//	g_pcYuvResi->create(uiPicWidth, uiPicHeight, chromaFormat, uiMaxCuWidth, uiMaxCuHeight, uiTotalCuDepth, true);
-	//}
+	if (g_pcYuvResi == NULL)
+	{
+		g_pcYuvResi = new TComPicYuv;
+		g_pcYuvResi->create(uiPicWidth, uiPicHeight, chromaFormat, uiMaxCuWidth, uiMaxCuHeight, uiTotalCuDepth, true);
+	}
 }
 
 Void  TEncCu::initEstPGR(TComPic* pcPic)
@@ -92,43 +93,44 @@ Void  TEncCu::initEstPGR(TComPic* pcPic)
 		UInt uiPicWidth = pcPicYuvOrg->getWidth(cId);
 		UInt uiPicHeight = pcPicYuvOrg->getHeight(cId);
 
+		g_quadTree[cId] = new CQuadTree(5, 512, uiPicWidth , uiPicHeight);
 		// init pixel data
-		if (m_pPixel[cId] == NULL)
-			m_pPixel[cId] = new Pixel[(uiPicWidth + 2 * EXTEG)*(uiPicHeight + 2 * EXTEG)];
+		//if (m_pPixel[cId] == NULL)
+		//	m_pPixel[cId] = new Pixel[(uiPicWidth + 2 * EXTEG)*(uiPicHeight + 2 * EXTEG)];
 
-		UInt uiStride = pcPicYuvOrg->getStride(cId);
-		Pel* pBuffer = pcPicYuvOrg->getAddr(cId);
-		for (UInt uiY = 0; uiY < uiPicHeight + 2 * EXTEG; uiY++)
-		{
-			for (UInt uiX = 0; uiX < uiPicWidth + 2 * EXTEG; uiX++)
-			{
-				UInt index = uiY*(uiPicWidth + 2 * EXTEG) + uiX;
-				Pixel* pPixel = m_pPixel[cId] + index;
+		//UInt uiStride = pcPicYuvOrg->getStride(cId);
+		//Pel* pBuffer = pcPicYuvOrg->getAddr(cId);
+		//for (UInt uiY = 0; uiY < uiPicHeight + 2 * EXTEG; uiY++)
+		//{
+		//	for (UInt uiX = 0; uiX < uiPicWidth + 2 * EXTEG; uiX++)
+		//	{
+		//		UInt index = uiY*(uiPicWidth + 2 * EXTEG) + uiX;
+		//		Pixel* pPixel = m_pPixel[cId] + index;
 
-				pPixel->m_bIsRec = false;
-				pPixel->m_uiX = uiX;
-				pPixel->m_uiY = uiY;
-				if (uiX < EXTEG || uiX >= uiPicWidth + EXTEG || uiY < EXTEG || uiY >= uiPicHeight + EXTEG)
-					pPixel->m_uiOrg = 0;		///< original value
-				else
-				{
-					UInt uiTrueX = uiX - EXTEG;
-					UInt uiTrueY = uiY - EXTEG;
-					index = uiTrueY * uiStride + uiTrueX;
-					assert(pBuffer[index] <= 255);
-					pPixel->m_uiOrg = pBuffer[index];
-				}
-				pPixel->m_uiPred = 0;
-				pPixel->m_uiReco = 0;
-				pPixel->m_iResi = 0;
-				pPixel->m_iDiff = 0;
-				pPixel->m_uiBestPX = EXTEG;
-				pPixel->m_uiBestPY = EXTEG;
-				pPixel->m_mmMatch.m_uiAbsDiff = 255;
-				pPixel->m_mmMatch.m_uiNumMatchPoints = 0;
-				pPixel->m_mmMatch.m_uiNumValidPoints = 0;
-			}
-		}
+		//		pPixel->m_bIsRec = false;
+		//		pPixel->m_uiX = uiX;
+		//		pPixel->m_uiY = uiY;
+		//		if (uiX < EXTEG || uiX >= uiPicWidth + EXTEG || uiY < EXTEG || uiY >= uiPicHeight + EXTEG)
+		//			pPixel->m_uiOrg = 0;		///< original value
+		//		else
+		//		{
+		//			UInt uiTrueX = uiX - EXTEG;
+		//			UInt uiTrueY = uiY - EXTEG;
+		//			index = uiTrueY * uiStride + uiTrueX;
+		//			assert(pBuffer[index] <= 255);
+		//			pPixel->m_uiOrg = pBuffer[index];
+		//		}
+		//		pPixel->m_uiPred = 0;
+		//		pPixel->m_uiReco = 0;
+		//		pPixel->m_iResi = 0;
+		//		pPixel->m_iDiff = 0;
+		//		pPixel->m_uiBestPX = EXTEG;
+		//		pPixel->m_uiBestPY = EXTEG;
+		//		pPixel->m_mmMatch.m_uiAbsDiff = 255;
+		//		pPixel->m_mmMatch.m_uiNumMatchPoints = 0;
+		//		pPixel->m_mmMatch.m_uiNumValidPoints = 0;
+		//	}
+		//}
 	}
 }
 
@@ -419,7 +421,8 @@ Void TEncCu::compressCtu(TComDataCU* pCtu, UChar* lastPLTSize, UChar* lastPLTUse
 		//derivePGRPLT(pCtu);
 		xCompressCUPGR(m_ppcBestCU[0], m_ppcTempCU[0], 0);
 		// deal with reconstructed pixels
-		::updatePixel(pCtu, m_pPixel);
+		//::updatePixel(pCtu, m_pPixel);
+		//::updateQuadTree(pCtu);
 	}
 	else
 		xCompressCU(m_ppcBestCU[0], m_ppcTempCU[0], 0 DEBUG_STRING_PASS_INTO(sDebug));
@@ -1715,8 +1718,9 @@ Void  TEncCu::xCompressCUPGR(TComDataCU*& rpcBestCU, TComDataCU*& rpcTempCU, UIn
 		(uiBPelY < sps.getPicHeightInLumaSamples()))
 	{
 		// ---- prediction using default method(Template Matching) ----
-		::matchTemplate(rpcTempCU, m_pPixel);
-
+		//::matchTemplate(rpcTempCU, m_pPixel);
+		::matchTemplateQuadTree(rpcTempCU);
+		//::matchTemplate(rpcTempCU, BLOCK_SIZE);
 		// loop all possible QP values
 		for (Int iQP = iMinQP; iQP <= iMaxQP; iQP++)
 		{

@@ -43,6 +43,8 @@
 #include "TLibCommon/ContextModel.h"
 #endif
 
+#include "TLibCommon/BlockTemplate.h"
+
 //! \ingroup TLibEncoder
 //! \{
 
@@ -98,7 +100,9 @@ Void TEncTop::create ()
      );
 
 #if PGR_ENABLE
+  //initCoordinateMap(getSourceWidth(), getSourceHeight(), m_maxCUWidth, m_maxCUHeight,4, m_chromaFormatIDC);
   initCoordinateMap(getSourceWidth(), getSourceHeight(), m_maxCUWidth, m_maxCUHeight, m_chromaFormatIDC);
+
   m_cCuEncoder.createPGR(getSourceWidth(), getSourceHeight(), m_chromaFormatIDC, m_maxCUWidth, m_maxCUHeight, m_maxTotalCUDepth);
 #endif
 

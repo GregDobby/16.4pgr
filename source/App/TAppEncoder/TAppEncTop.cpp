@@ -491,12 +491,21 @@ Void TAppEncTop::encode()
 	//TComPicYuv* pcYuvRsmpld = new TComPicYuv;
 	//pcYuvRsmpld->create(m_iSourceWidth, m_iSourceHeight, m_chromaFormatIDC, m_uiMaxCUWidth, m_uiMaxCUHeight, m_uiMaxTotalCUDepth, true);
 	//TVideoIOYuv rsmpld;
+	//rsmpld.open("rsmpld.yuv",true, m_inputBitDepth, m_MSBExtendedBitDepth, m_internalBitDepth);
+	////pcPicYuvOrg->resample(m_uiMaxCUWidth, m_uiMaxCUWidth);
+	//rsmpld.write(pcPicYuvOrg, (!m_outputInternalColourSpace) ? m_inputColourSpaceConvert : IPCOLOURSPACE_UNCHANGED, m_confWinLeft, m_confWinRight, m_confWinTop, m_confWinBottom);
+	//rsmpld.close();
+	//rsmpld.open("org.yuv", true, m_inputBitDepth, m_MSBExtendedBitDepth, m_internalBitDepth);
+	//pcPicYuvOrg->resample(m_uiMaxCUWidth, m_uiMaxCUWidth,true);
+	//rsmpld.write(pcPicYuvOrg, (!m_outputInternalColourSpace) ? m_inputColourSpaceConvert : IPCOLOURSPACE_UNCHANGED, m_confWinLeft, m_confWinRight, m_confWinTop, m_confWinBottom);
+	//rsmpld.close();
 	//pred.open("pred.yuv", true, m_inputBitDepth, m_MSBExtendedBitDepth, m_internalBitDepth);
 	//pred.write(g_pcYuvPred, (!m_outputInternalColourSpace) ? m_inputColourSpaceConvert : IPCOLOURSPACE_UNCHANGED, m_confWinLeft, m_confWinRight, m_confWinTop, m_confWinBottom);
 	//pred.close();
 	//resi.open("resi.yuv", true, m_inputBitDepth, m_MSBExtendedBitDepth, m_internalBitDepth);
 	//resi.write(g_pcYuvResi, (!m_outputInternalColourSpace) ? m_inputColourSpaceConvert : IPCOLOURSPACE_UNCHANGED, m_confWinLeft, m_confWinRight, m_confWinTop, m_confWinBottom);
 	//resi.close();
+
 #endif
 
 	while (!bEos)
@@ -663,15 +672,78 @@ Void TAppEncTop::xWriteOutput(std::ostream& bitstreamFile, Int iNumEncoded, cons
 			{
 				m_cTVideoIOYuvReconFile.write(pcPicYuvRec, ipCSC, m_confWinLeft, m_confWinRight, m_confWinTop, m_confWinBottom);
 				//TVideoIOYuv resi, abresi,pred;
-				//resi.open("encode_resi.yuv", true, m_inputBitDepth, m_MSBExtendedBitDepth, m_internalBitDepth);  
+				//resi.open("resi_resampled.yuv", true, m_inputBitDepth, m_MSBExtendedBitDepth, m_internalBitDepth);  
 				//abresi.open("abresi.yuv", true, m_inputBitDepth, m_MSBExtendedBitDepth, m_internalBitDepth);
 				//pred.open("encode_pred.yuv", true, m_inputBitDepth, m_MSBExtendedBitDepth, m_internalBitDepth);
 				//resi.write(g_pcYuvResi, ipCSC, m_confWinLeft, m_confWinRight, m_confWinTop, m_confWinBottom);
 				//abresi.write(g_pcYuvAbnormalResi, ipCSC, m_confWinLeft, m_confWinRight, m_confWinTop, m_confWinBottom);
 				//pred.write(g_pcYuvPred, ipCSC, m_confWinLeft, m_confWinRight, m_confWinTop, m_confWinBottom);
 				//resi.close();
+
+				//string fileName[] = { "resi_y.txt","resi_u.txt","resi_v.txt" };
+				//
+				//for (int ch = 0; ch < 3; ch++)
+				//{
+				//	fstream f(fileName[ch], ios::out);
+				//	Pel* pBuffer = g_pcYuvResi->getAddr(ComponentID(ch));
+				//	UInt uiStride = g_pcYuvResi->getStride(ComponentID(ch));
+				//	Pel* p = pBuffer;
+				//	for (int y = 0; y < 1080; y++)
+				//	{
+				//		for (int x = 0; x < 1920; x++)
+				//		{
+				//			f << p[x] << " ";
+				//		}
+				//		f << endl;
+				//		p += uiStride;
+				//	}
+				//	f.close();
+				//}
+
+
+				//resi.open("resi_original.yuv", true, m_inputBitDepth, m_MSBExtendedBitDepth, m_internalBitDepth);
+				g_pcYuvResi->resample(64, 64, true);
+				fstream f;
+				f.open("resi.yuv", ios::app|ios::binary);
+				for (int i = 0; i < 3; i++)
+				{
+					Pel* pBuffer = g_pcYuvResi->getAddr(ComponentID(i));
+					int height = g_pcYuvResi->getHeight(ComponentID(i));
+					int width = g_pcYuvResi->getWidth(ComponentID(i));
+					int stride = g_pcYuvResi->getStride(ComponentID(i));
+					for (int y = 0; y < height; y++)
+					{
+						for (int x = 0; x < width; x++)
+						{
+							f.write((char*)pBuffer, width);
+						}
+						pBuffer += stride;
+					}
+				}
+				//resi.write(g_pcYuvResi, ipCSC, m_confWinLeft, m_confWinRight, m_confWinTop, m_confWinBottom);
+				//resi.close();
 				//abresi.close();
 				//pred.close();
+
+				//string fileName1[] = { "resi_y_org.txt","resi_u_org.txt","resi_v_org.txt" };
+
+				//for (int ch = 0; ch < 3; ch++)
+				//{
+				//	fstream f(fileName1[ch], ios::out);
+				//	Pel* pBuffer = g_pcYuvResi->getAddr(ComponentID(ch));
+				//	UInt uiStride = g_pcYuvResi->getStride(ComponentID(ch));
+				//	Pel* p = pBuffer;
+				//	for (int y = 0; y < 1080; y++)
+				//	{
+				//		for (int x = 0; x < 1920; x++)
+				//		{
+				//			f << p[x] << " ";
+				//		}
+				//		f << endl;
+				//		p += uiStride;
+				//	}
+				//	f.close();
+				//}
 			}
 
 			const AccessUnit& au = *(iterBitstream++);

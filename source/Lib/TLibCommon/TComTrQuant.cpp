@@ -1591,6 +1591,9 @@ Void TComTrQuant::invTransformNxN(      TComTU        &rTu,
   const UInt uiWidth = rect.width;
   const UInt uiHeight = rect.height;
 
+  //invRdpcmNxN(rTu, compID, pcResidual, uiStride);
+  //return;
+
   if (uiWidth != uiHeight) //for intra, the TU will have been split above this level, so this condition won't be true, hence this only affects inter
   {
     //------------------------------------------------
@@ -1915,11 +1918,12 @@ Void TComTrQuant::rdpcmNxN   ( TComTU& rTu, const ComponentID compID, Pel* pcRes
   TComDataCU *pcCU=rTu.getCU();
   const UInt uiAbsPartIdx=rTu.GetAbsPartIdxTU();
 
-  if (!pcCU->isRDPCMEnabled(uiAbsPartIdx) || ((pcCU->getTransformSkip(uiAbsPartIdx, compID) == 0) && !pcCU->getCUTransquantBypass(uiAbsPartIdx)))
-  {
-    rdpcmMode = RDPCM_OFF;
-  }
-  else if ( pcCU->isIntra( uiAbsPartIdx ) )
+  //if (!pcCU->isRDPCMEnabled(uiAbsPartIdx) || ((pcCU->getTransformSkip(uiAbsPartIdx, compID) == 0) && !pcCU->getCUTransquantBypass(uiAbsPartIdx)))
+  //{
+  //  rdpcmMode = RDPCM_OFF;
+  //}
+  //else
+	if ( pcCU->isIntra( uiAbsPartIdx ) )
   {
     const ChromaFormat chFmt = pcCU->getPic()->getPicYuvOrg()->getChromaFormat();
     const ChannelType chType = toChannelType(compID);
@@ -1929,10 +1933,11 @@ Void TComTrQuant::rdpcmNxN   ( TComTU& rTu, const ComponentID compID, Pel* pcRes
     const UInt uiChCodedMode = (uiChPredMode==DM_CHROMA_IDX && isChroma(compID)) ? pcCU->getIntraDir(CHANNEL_TYPE_LUMA, getChromasCorrespondingPULumaIdx(uiAbsPartIdx, chFmt, partsPerMinCU)) : uiChPredMode;
     const UInt uiChFinalMode = ((chFmt == CHROMA_422)       && isChroma(compID)) ? g_chroma422IntraAngleMappingTable[uiChCodedMode] : uiChCodedMode;
 
-    if (uiChFinalMode == VER_IDX || uiChFinalMode == HOR_IDX)
+    //if (uiChFinalMode == VER_IDX || uiChFinalMode == HOR_IDX)
+	if (rTu.getRect(ComponentID(0)).width <= 0)
     {
       rdpcmMode = (uiChFinalMode == VER_IDX) ? RDPCM_VER : RDPCM_HOR;
-      applyForwardRDPCM( rTu, compID, pcResidual, uiStride, cQP, pcCoeff, uiAbsSum, rdpcmMode );
+	  applyForwardRDPCM(rTu, compID, pcResidual, uiStride, cQP, pcCoeff, uiAbsSum, RDPCM_VER);//rdpcmMode );
     }
     else
     {
@@ -2010,10 +2015,11 @@ Void TComTrQuant::invRdpcmNxN( TComTU& rTu, const ComponentID compID, Pel* pcRes
     {
       rdpcmMode = RDPCMMode(pcCU->getExplicitRdpcmMode( compID, uiAbsPartIdx ));
     }
+	rdpcmMode = RDPCM_VER;// (uiChFinalMode == VER_IDX) ? RDPCM_VER : RDPCM_HOR;
 
     const TCoeff pelMin=(TCoeff) std::numeric_limits<Pel>::min();
     const TCoeff pelMax=(TCoeff) std::numeric_limits<Pel>::max();
-    if (rdpcmMode == RDPCM_VER)
+    if (rdpcmMode == RDPCM_VER && uiWidth<=0)
     {
       for( UInt uiX = 0; uiX < uiWidth; uiX++ )
       {

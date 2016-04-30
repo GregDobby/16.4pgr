@@ -183,7 +183,7 @@ Void TDecCu::decompressCtu(TComDataCU* pCtu)
 
 	xDecompressCU(pCtu, 0, 0);
 #if PGR_ENABLE
-	::updatePixel(pCtu, m_pPixel);
+	//::updatePixel(pCtu, m_pPixel);
 #endif
 }
 
@@ -480,7 +480,7 @@ Void TDecCu::xDecompressCU(TComDataCU* pCtu, UInt uiAbsPartIdx, UInt uiDepth)
 #if PGR_ENABLE
 	if (pCtu->getPredictionMode(0) == MODE_INTRA)
 	{
-		::matchTemplate(m_ppcCU[uiDepth], m_pPixel);
+		//::matchTemplate(m_ppcCU[uiDepth], m_pPixel);
 		//::updateLookupTable(m_ppcCU[uiDepth], m_pPixel);
 	}
 #endif
