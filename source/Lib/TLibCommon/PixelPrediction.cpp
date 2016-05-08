@@ -362,7 +362,6 @@ Void matchTemplateQuadTree(TComDataCU* rpcTempCU)
 {
 	UInt uiCUPelX = rpcTempCU->getCUPelX();			// x of upper left corner of the cu
 	UInt uiCUPelY = rpcTempCU->getCUPelY();			// y of upper left corner of the cu
-
 	UInt uiMaxCUWidth = rpcTempCU->getSlice()->getSPS()->getMaxCUWidth();		// max cu width
 	UInt uiMaxCUHeight = rpcTempCU->getSlice()->getSPS()->getMaxCUHeight();		// max cu height
 
@@ -379,8 +378,9 @@ Void matchTemplateQuadTree(TComDataCU* rpcTempCU)
 	vector<UInt> insertHashvalues;
 
 	fstream f;
-	f.open("predinfo.txt", ios::app);
-
+	char curFilename[64];
+	sprintf(curFilename, "predinfo_%d.txt", rpcTempCU->getCtuRsAddr());
+	f.open(curFilename, ios::app);
 	// component loop
 	for (UInt ch = 0; ch < uiNumValidCopmonent; ch++)
 	{
@@ -388,9 +388,9 @@ Void matchTemplateQuadTree(TComDataCU* rpcTempCU)
 		UInt uiStride = pcPredYuv->getStride(cId);									// stride for a certain component
 		UInt uiPicWidth = pcPredYuv->getWidth(cId);									// picture width for a certain component
 		UInt uiPicHeight = pcPredYuv->getHeight(cId);								// picture height for a certain component
-
-		UInt uiCBWidth = uiMaxCUWidth >> (pcPredYuv->getComponentScaleX(cId));		// code block width for a certain component
-		UInt uiCBHeight = uiMaxCUHeight >> (pcPredYuv->getComponentScaleY(cId));	// code block height for a certain component
+		
+		UInt uiCBWidth = (uiMaxCUWidth >> (pcPredYuv->getComponentScaleX(cId)))>> rpcTempCU->getDepth()[0];;		// code block width for a certain component
+		UInt uiCBHeight = (uiMaxCUHeight >> (pcPredYuv->getComponentScaleY(cId))) >> rpcTempCU->getDepth()[0];;	// code block height for a certain component
 
 																					// rectangle of the code block
 		UInt uiTopX = Clip3((UInt)0, uiPicWidth, uiCUPelX);
@@ -418,8 +418,10 @@ Void matchTemplateQuadTree(TComDataCU* rpcTempCU)
 			for (UInt uiX = uiTopX; uiX < uiBottomX; uiX++)
 			{
 				UInt uiOrgX, uiOrgY;
-				uiOrgX = g_auiRsmpldToOrg[cId][0][uiX];
+  				uiOrgX = g_auiRsmpldToOrg[cId][0][uiX];
 				uiOrgY = g_auiRsmpldToOrg[cId][1][uiY];
+
+
 
 				UInt curTemplate[21];
 				getTemplate(curTemplate, pcRecoYuv, cId, uiOrgX, uiOrgY);
@@ -543,26 +545,29 @@ Void matchTemplateQuadTree(TComDataCU* rpcTempCU)
 				f << cId << " " << uiOrgX << " " << uiOrgY;
 				for (int i = 0; i < 21; i++)
 					f << " " << curTemplate[i];
-
+				f << " " << uiMatchX << " " << uiMatchY;
+				for (int i = 0; i < 21; i++)
+					f << " " << cmpTemplate[i];
+				int pred = 0;
+				int resi = 0;
 				UInt uiTargetIdx = uiY*uiStride + uiX;              // resampled coordinates
 				if (uiMatchX == -1)
 				{
 					pPredBuffer[uiTargetIdx] = 0;
-					g_pcYuvResi->getAddr(cId)[uiTargetIdx] = pResiBuffer[uiTargetIdx] = pOrgBuffer[uiTargetIdx];
+					resi = g_pcYuvResi->getAddr(cId)[uiTargetIdx] = pResiBuffer[uiTargetIdx] = pOrgBuffer[uiTargetIdx];
 				}
 				else
 				{
-					f << " " << uiMatchX << " " << uiMatchY;
-					for (int i = 0; i < 21; i++)
-						f << " " << cmpTemplate[i];
-
 					uiMatchX = g_auiOrgToRsmpld[cId][0][uiMatchX];
 					uiMatchY = g_auiOrgToRsmpld[cId][1][uiMatchY];
 
 					UInt uiPredIdx = uiMatchY*uiStride + uiMatchX;
-					pPredBuffer[uiTargetIdx] = pRecoBuffer[uiPredIdx];
-					g_pcYuvResi->getAddr(cId)[uiTargetIdx] = pResiBuffer[uiTargetIdx] = pOrgBuffer[uiTargetIdx] - pPredBuffer[uiTargetIdx];
+					pred = pPredBuffer[uiTargetIdx] = pRecoBuffer[uiPredIdx];
+					pResiBuffer[uiTargetIdx] = pOrgBuffer[uiTargetIdx] - pPredBuffer[uiTargetIdx];
+					resi = g_pcYuvResi->getAddr(cId)[uiTargetIdx] = abs(pResiBuffer[uiTargetIdx]);
+					assert(pResiBuffer[uiTargetIdx] + pPredBuffer[uiTargetIdx] == pOrgBuffer[uiTargetIdx]);
 				}
+				f << " " << pred<<" "<<resi;
 				f << endl;
 				//if (can_list.empty() && g_newHashValues[cId].count(uiHashvalue) == 0)
 				//{
@@ -595,8 +600,9 @@ Void matchTemplateQuadTree(TComDataCU* rpcTempCU)
 		insertHashvalues.clear();
 
 	}
-	g_window++;
 	f.close();
+
+	g_window++;
 }
 
 inline UInt getTemplateDiff(UInt t1[], UInt t2[])

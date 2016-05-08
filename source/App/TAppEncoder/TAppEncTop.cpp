@@ -671,7 +671,7 @@ Void TAppEncTop::xWriteOutput(std::ostream& bitstreamFile, Int iNumEncoded, cons
 			if (m_pchReconFile)
 			{
 				m_cTVideoIOYuvReconFile.write(pcPicYuvRec, ipCSC, m_confWinLeft, m_confWinRight, m_confWinTop, m_confWinBottom);
-				//TVideoIOYuv resi, abresi,pred;
+				TVideoIOYuv resi, abresi,pred;
 				//resi.open("resi_resampled.yuv", true, m_inputBitDepth, m_MSBExtendedBitDepth, m_internalBitDepth);  
 				//abresi.open("abresi.yuv", true, m_inputBitDepth, m_MSBExtendedBitDepth, m_internalBitDepth);
 				//pred.open("encode_pred.yuv", true, m_inputBitDepth, m_MSBExtendedBitDepth, m_internalBitDepth);
@@ -701,27 +701,12 @@ Void TAppEncTop::xWriteOutput(std::ostream& bitstreamFile, Int iNumEncoded, cons
 				//}
 
 
-				//resi.open("resi_original.yuv", true, m_inputBitDepth, m_MSBExtendedBitDepth, m_internalBitDepth);
+				resi.open("resi_original.yuv", true, m_inputBitDepth, m_MSBExtendedBitDepth, m_internalBitDepth);
 				g_pcYuvResi->resample(64, 64, true);
-				fstream f;
-				f.open("resi.yuv", ios::app|ios::binary);
-				for (int i = 0; i < 3; i++)
-				{
-					Pel* pBuffer = g_pcYuvResi->getAddr(ComponentID(i));
-					int height = g_pcYuvResi->getHeight(ComponentID(i));
-					int width = g_pcYuvResi->getWidth(ComponentID(i));
-					int stride = g_pcYuvResi->getStride(ComponentID(i));
-					for (int y = 0; y < height; y++)
-					{
-						for (int x = 0; x < width; x++)
-						{
-							f.write((char*)pBuffer, width);
-						}
-						pBuffer += stride;
-					}
-				}
-				//resi.write(g_pcYuvResi, ipCSC, m_confWinLeft, m_confWinRight, m_confWinTop, m_confWinBottom);
-				//resi.close();
+				//fstream f;
+				//f.open("resi.yuv", ios::app|ios::binary);
+				resi.write(g_pcYuvResi, ipCSC, m_confWinLeft, m_confWinRight, m_confWinTop, m_confWinBottom);
+				resi.close();
 				//abresi.close();
 				//pred.close();
 

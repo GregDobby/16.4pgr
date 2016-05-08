@@ -2247,19 +2247,19 @@ Void TEncCu::xEncodeCU(TComDataCU* pcCU, UInt uiAbsPartIdx, UInt uiDepth)
 	setCodeChromaQpAdjFlag(codeChromaQpAdj);
 	setdQPFlag(bCodeDQP);
 
-	UInt width = *pcCU->getWidth()>>uiDepth;
-	UInt height = *pcCU->getHeight()>>uiDepth;
-	fstream f;
-	f.open("enc_coeff.txt", ios::app);
-	TCoeff* p = pcCU->getCoeff(ComponentID(0));
-	for (UInt x = 0; x < width; x++)
-	{
-		for (UInt y = 0; y < height; y++)
-		{
-			f << p[y*width + x] << endl;
-		}
-	}
-	f.close();
+	//UInt width = *pcCU->getWidth()>>uiDepth;
+	//UInt height = *pcCU->getHeight()>>uiDepth;
+	//fstream f;
+	//f.open("enc_coeff.txt", ios::app);
+	//TCoeff* p = pcCU->getCoeff(ComponentID(0));
+	//for (UInt x = 0; x < width; x++)
+	//{
+	//	for (UInt y = 0; y < height; y++)
+	//	{
+	//		f << p[y*width + x] << endl;
+	//	}
+	//}
+	//f.close();
 
 	// --- write terminating bit ---
 	finishCU(pcCU, uiAbsPartIdx, uiDepth);
