@@ -1,1 +1,23 @@
-﻿
+﻿  WeightPredAnalysis.cpp
+  TEncTop.cpp
+  TEncSlice.cpp
+  TEncSearch.cpp
+  TEncSbac.cpp
+e:\hm16.4-pgr\source\lib\tlibencoder\tencsbac.cpp(2024): warning C4101: “Base”: 未引用的局部变量
+e:\hm16.4-pgr\source\lib\tlibencoder\tencsbac.cpp(2021): warning C4101: “GroupID”: 未引用的局部变量
+  TEncSampleAdaptiveOffset.cpp
+  TEncRateCtrl.cpp
+  TEncPreanalyzer.cpp
+  TEncPic.cpp
+  TEncGOP.cpp
+  TEncEntropy.cpp
+  TEncCu.cpp
+  TEncCavlc.cpp
+  TEncBinCoderCABACCounter.cpp
+  TEncBinCoderCABAC.cpp
+  SyntaxElementWriter.cpp
+  SEIwrite.cpp
+  SEIEncoder.cpp
+  NALwrite.cpp
+  正在生成代码...
+  TLibEncoder_vc10.vcxproj -> E:\hm16.4-pgr\build\\vc10\Win32\Debug\TLibEncoder\TLibEncoder.lib

@@ -548,6 +548,7 @@ Void matchTemplateQuadTree(TComDataCU* rpcTempCU)
 				f << " " << uiMatchX << " " << uiMatchY;
 				for (int i = 0; i < 21; i++)
 					f << " " << cmpTemplate[i];
+				f << " " << uiHashvalue;
 				int pred = 0;
 				int resi = 0;
 				UInt uiTargetIdx = uiY*uiStride + uiX;              // resampled coordinates
