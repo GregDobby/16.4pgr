@@ -377,10 +377,12 @@ Void matchTemplateQuadTree(TComDataCU* rpcTempCU)
 	vector<pair<int, int>> inserList;
 	vector<UInt> insertHashvalues;
 
-	fstream f;
-	char curFilename[64];
-	sprintf(curFilename, "predinfo_%d.txt", rpcTempCU->getCtuRsAddr());
-	f.open(curFilename, ios::app);
+	Bool bEnc = false;
+
+	//fstream f;
+	//char curFilename[64];
+	//sprintf(curFilename, "predinfo_%d.txt", rpcTempCU->getCtuRsAddr());
+	//f.open(curFilename, ios::app);
 	// component loop
 	for (UInt ch = 0; ch < uiNumValidCopmonent; ch++)
 	{
@@ -401,7 +403,12 @@ Void matchTemplateQuadTree(TComDataCU* rpcTempCU)
 		Pel* pPredBuffer = pcPredYuv->getAddr(cId);
 		Pel* pResiBuffer = pcResiYuv->getAddr(cId);
 		Pel* pRecoBuffer = pcRecoYuv->getAddr(cId);
-		Pel* pOrgBuffer = pcOrgYuv->getAddr(cId);
+		Pel* pOrgBuffer;
+		if (pcOrgYuv != NULL)
+		{
+			pOrgBuffer = pcOrgYuv->getAddr(cId);
+			bEnc = true;
+		}
 
 		int length = 0;
 		int start = clock();
@@ -542,20 +549,23 @@ Void matchTemplateQuadTree(TComDataCU* rpcTempCU)
 				int cend = clock();
 
 				c += cend - cstart;
-				f << cId << " " << uiOrgX << " " << uiOrgY;
-				for (int i = 0; i < 21; i++)
-					f << " " << curTemplate[i];
-				f << " " << uiMatchX << " " << uiMatchY;
-				for (int i = 0; i < 21; i++)
-					f << " " << cmpTemplate[i];
-				f << " " << uiHashvalue;
+				//f << cId << " " << uiOrgX << " " << uiOrgY;
+				//for (int i = 0; i < 21; i++)
+				//	f << " " << curTemplate[i];
+				//f << " " << uiMatchX << " " << uiMatchY;
+				//for (int i = 0; i < 21; i++)
+				//	f << " " << cmpTemplate[i];
+				//f << " " << uiHashvalue;
 				int pred = 0;
 				int resi = 0;
 				UInt uiTargetIdx = uiY*uiStride + uiX;              // resampled coordinates
 				if (uiMatchX == -1)
 				{
 					pPredBuffer[uiTargetIdx] = 0;
-					resi = g_pcYuvResi->getAddr(cId)[uiTargetIdx] = pResiBuffer[uiTargetIdx] = pOrgBuffer[uiTargetIdx];
+					pred = pPredBuffer[uiTargetIdx] = 0;
+
+					if(bEnc)
+						resi = g_pcYuvResi->getAddr(cId)[uiTargetIdx] = pResiBuffer[uiTargetIdx] = pOrgBuffer[uiTargetIdx];
 				}
 				else
 				{
@@ -564,21 +574,33 @@ Void matchTemplateQuadTree(TComDataCU* rpcTempCU)
 
 					UInt uiPredIdx = uiMatchY*uiStride + uiMatchX;
 					pred = pPredBuffer[uiTargetIdx] = pRecoBuffer[uiPredIdx];
-					pResiBuffer[uiTargetIdx] = pOrgBuffer[uiTargetIdx] - pPredBuffer[uiTargetIdx];
+					if(bEnc)
+						pResiBuffer[uiTargetIdx] = pOrgBuffer[uiTargetIdx] - pPredBuffer[uiTargetIdx];
+
 					resi = g_pcYuvResi->getAddr(cId)[uiTargetIdx] = abs(pResiBuffer[uiTargetIdx]);
 					assert(pResiBuffer[uiTargetIdx] + pPredBuffer[uiTargetIdx] == pOrgBuffer[uiTargetIdx]);
 				}
-				f << " " << pred<<" "<<resi;
-				f << endl;
+				//f << " " << pred<<" "<<resi;
+				//f << endl;
 				//if (can_list.empty() && g_newHashValues[cId].count(uiHashvalue) == 0)
 				//{
 				//	g_newHashValues[cId].insert(uiHashvalue);
 				//	continue;
 				//}
+				//直接进行量化和反量化
+				// 量化步长
+				// 加入新模板
 				if ( uiMinDiff > 5)
 				{
 					inserList.push_back(make_pair(uiOrgX, uiOrgY));
 					insertHashvalues.push_back(uiHashvalue);
+
+					pRecoBuffer[uiTargetIdx] = pPredBuffer[uiTargetIdx] + pResiBuffer[uiTargetIdx];
+				}
+				else
+				{
+					pResiBuffer[uiTargetIdx]/= 5;
+					pRecoBuffer[uiTargetIdx] = pPredBuffer[uiTargetIdx] + pResiBuffer[uiTargetIdx]* 5;
 				}
 			}
 		}
@@ -601,7 +623,7 @@ Void matchTemplateQuadTree(TComDataCU* rpcTempCU)
 		insertHashvalues.clear();
 
 	}
-	f.close();
+	//f.close();
 
 	g_window++;
 }
@@ -706,7 +728,9 @@ Void getTemplate(UInt aTemplate[], TComPicYuv* pcRecoYuv, ComponentID cId, UInt 
 		}
 		uiX = g_auiOrgToRsmpld[cId][0][uiX];
 		uiY = g_auiOrgToRsmpld[cId][1][uiY];
+		
 		aTemplate[i] = pPicBuffer[uiY*uiStride + uiX];
+		assert(aTemplate[i] >= 0 && aTemplate[i] <= 255);
 	}
 }
 

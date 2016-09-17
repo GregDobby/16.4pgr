@@ -56,6 +56,7 @@ Void TDecSlice::create(UInt uiPicWidth, UInt uiPicHeight, UInt uiMaxCuWidth, UIn
 {
 	m_pcYuvPred = new TComPicYuv; m_pcYuvPred->create(uiPicWidth, uiPicHeight, chromaFormatIDC, uiMaxCuWidth, uiMaxCuHeight, uiMaxCuDepth, true);
 	m_pcYuvResi = new TComPicYuv; m_pcYuvResi->create(uiPicWidth, uiPicHeight, chromaFormatIDC, uiMaxCuWidth, uiMaxCuHeight, uiMaxCuDepth, true);
+
 	//g_pcYuvPred = new TComPicYuv; g_pcYuvPred->create(uiPicWidth, uiPicHeight, chromaFormatIDC, uiMaxCuWidth, uiMaxCuHeight, uiMaxCuDepth, true);
 	g_pcYuvAbnormalResi = new TComPicYuv; g_pcYuvAbnormalResi->create(uiPicWidth, uiPicHeight, chromaFormatIDC, uiMaxCuWidth, uiMaxCuHeight, uiMaxCuDepth, true);
 	//g_pcYuvPred = new TComPicYuv; g_pcYuvPred->create(uiPicWidth, uiPicHeight, chromaFormatIDC, uiMaxCuWidth, uiMaxCuHeight, uiMaxCuDepth, true);
@@ -144,6 +145,7 @@ Void TDecSlice::decompressSlice(TComInputBitstream** ppcSubstreams, TComPic* pcP
 
   pcPic->setPicYuvPred(m_pcYuvPred);
   pcPic->setPicYuvResi(m_pcYuvResi);
+  
 #else
   pcPic->setPicYuvPred( 0 );
   pcPic->setPicYuvResi( 0 );

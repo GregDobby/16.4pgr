@@ -699,7 +699,11 @@ Void TAppEncTop::xWriteOutput(std::ostream& bitstreamFile, Int iNumEncoded, cons
 				//	}
 				//	f.close();
 				//}
-
+				pred.open("resi.yuv", true, m_inputBitDepth, m_MSBExtendedBitDepth, m_internalBitDepth);
+				//fstream f;
+				//f.open("resi.yuv", ios::app|ios::binary);
+				pred.write(g_pcYuvResi, ipCSC, m_confWinLeft, m_confWinRight, m_confWinTop, m_confWinBottom);
+				pred.close();
 
 				resi.open("resi_original.yuv", true, m_inputBitDepth, m_MSBExtendedBitDepth, m_internalBitDepth);
 				g_pcYuvResi->resample(64, 64, true);

@@ -1912,13 +1912,15 @@ Void TEncCu::xCheckPRGResidue(TComDataCU*& rpcBestCU, TComDataCU*& rpcTempCU, UI
 
 		m_ppcResiYuvTemp[uiDepth]->copyFromPicYuv(rpcTempCU->getPic()->getPicYuvResi(), rpcTempCU->getCtuRsAddr(), rpcTempCU->getZorderIdxInCtu());
 
+		//
+		m_ppcRecoYuvTemp[uiDepth]->copyFromPicYuv(rpcTempCU->getPic()->getPicYuvRec(), rpcTempCU->getCtuRsAddr(), rpcTempCU->getZorderIdxInCtu());
 		// ---- revise anomaly residue using different methods ----
 		//reviseAnomalyResidue(rpcTempCU, m_ppcOrigYuv[uiDepth], m_ppcPredYuvTemp[uiDepth], m_ppcResiYuvTemp[uiDepth], m_ppcAbnormalResiYuvTemp[uiDepth], uiResiThreshold);
 		 
 		// coefficients
 		m_pcPredSearch->estPGRLumaQT(rpcTempCU, m_ppcOrigYuv[uiDepth], m_ppcPredYuvTemp[uiDepth], m_ppcResiYuvTemp[uiDepth], m_ppcRecoYuvTemp[uiDepth]);
 
-		m_ppcRecoYuvTemp[uiDepth]->copyToPicComponent(COMPONENT_Y, rpcTempCU->getPic()->getPicYuvRec(), rpcTempCU->getCtuRsAddr(), rpcTempCU->getZorderIdxInCtu());
+		//m_ppcRecoYuvTemp[uiDepth]->copyToPicComponent(COMPONENT_Y, rpcTempCU->getPic()->getPicYuvRec(), rpcTempCU->getCtuRsAddr(), rpcTempCU->getZorderIdxInCtu());
 		
 		
 
@@ -2247,19 +2249,19 @@ Void TEncCu::xEncodeCU(TComDataCU* pcCU, UInt uiAbsPartIdx, UInt uiDepth)
 	setCodeChromaQpAdjFlag(codeChromaQpAdj);
 	setdQPFlag(bCodeDQP);
 
-	//UInt width = *pcCU->getWidth()>>uiDepth;
-	//UInt height = *pcCU->getHeight()>>uiDepth;
-	//fstream f;
-	//f.open("enc_coeff.txt", ios::app);
-	//TCoeff* p = pcCU->getCoeff(ComponentID(0));
-	//for (UInt x = 0; x < width; x++)
-	//{
-	//	for (UInt y = 0; y < height; y++)
-	//	{
-	//		f << p[y*width + x] << endl;
-	//	}
-	//}
-	//f.close();
+	UInt width = *pcCU->getWidth()>>uiDepth;
+	UInt height = *pcCU->getHeight()>>uiDepth;
+	fstream f;
+	f.open("enc_coeff.txt", ios::app);
+	TCoeff* p = pcCU->getCoeff(ComponentID(0));
+	for (UInt x = 0; x < width; x++)
+	{
+		for (UInt y = 0; y < height; y++)
+		{
+			f << p[y*width + x] << endl;
+		}
+	}
+	f.close();
 
 	// --- write terminating bit ---
 	finishCU(pcCU, uiAbsPartIdx, uiDepth);

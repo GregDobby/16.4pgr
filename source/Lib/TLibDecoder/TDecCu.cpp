@@ -477,14 +477,6 @@ Void TDecCu::xDecompressCU(TComDataCU* pCtu, UInt uiAbsPartIdx, UInt uiDepth)
 
 	m_ppcCU[uiDepth]->copySubCU(pCtu, uiAbsPartIdx, uiDepth);
 
-#if PGR_ENABLE
-	if (pCtu->getPredictionMode(0) == MODE_INTRA)
-	{
-		//::matchTemplate(m_ppcCU[uiDepth], m_pPixel);
-		//::updateLookupTable(m_ppcCU[uiDepth], m_pPixel);
-	}
-#endif
-
 
 	switch (m_ppcCU[uiDepth]->getPredictionMode(0))
 	{
@@ -510,6 +502,13 @@ Void TDecCu::xDecompressCU(TComDataCU* pCtu, UInt uiAbsPartIdx, UInt uiDepth)
 		assert(0);
 		break;
 	}
+#if PGR_ENABLE
+	if (pCtu->getPredictionMode(0) == MODE_INTRA)
+	{
+		::matchTemplateQuadTree(m_ppcCU[uiDepth]);
+		//::updateLookupTable(m_ppcCU[uiDepth], m_pPixel);
+	}
+#endif
 
 #ifdef DEBUG_STRING
 	const PredMode predMode = m_ppcCU[uiDepth]->getPredictionMode(0);
@@ -546,36 +545,37 @@ Void TDecCu::initEstPGR(TComPic* pcPic)
 		ComponentID cId = ComponentID(ch);
 		UInt uiPicWidth = pcPicYuvRec->getWidth(cId);
 		UInt uiPicHeight = pcPicYuvRec->getHeight(cId);
+		g_quadTree[cId] = new CQuadTree(5, 512, uiPicWidth, uiPicHeight);
+	}
+	//	// init pixel data
+	//	if (m_pPixel[cId] == NULL)
+	//		m_pPixel[cId] = new Pixel[(uiPicWidth + 2 * EXTEG)*(uiPicHeight + 2 * EXTEG)];
 
-		// init pixel data
-		if (m_pPixel[cId] == NULL)
-			m_pPixel[cId] = new Pixel[(uiPicWidth + 2 * EXTEG)*(uiPicHeight + 2 * EXTEG)];
+	//	UInt uiStride = pcPicYuvRec->getStride(cId);
+	//	Pel* pBuffer = pcPicYuvRec->getAddr(cId);
+	//	for (UInt uiY = 0; uiY < uiPicHeight + 2 * EXTEG; uiY++)
+	//	{
+	//		for (UInt uiX = 0; uiX < uiPicWidth + 2 * EXTEG; uiX++)
+	//		{
+	//			UInt index = uiY*(uiPicWidth + 2 * EXTEG) + uiX;
+	//			Pixel* pPixel = m_pPixel[cId] + index;
 
-		UInt uiStride = pcPicYuvRec->getStride(cId);
-		Pel* pBuffer = pcPicYuvRec->getAddr(cId);
-		for (UInt uiY = 0; uiY < uiPicHeight + 2 * EXTEG; uiY++)
-		{
-			for (UInt uiX = 0; uiX < uiPicWidth + 2 * EXTEG; uiX++)
-			{
-				UInt index = uiY*(uiPicWidth + 2 * EXTEG) + uiX;
-				Pixel* pPixel = m_pPixel[cId] + index;
-
-				pPixel->m_bIsRec = false;
-				pPixel->m_uiX = uiX;
-				pPixel->m_uiY = uiY;
-				pPixel->m_uiOrg = 0;
-				pPixel->m_uiPred = 0;
-				pPixel->m_uiReco = 0;
-				pPixel->m_iResi = 0;
-				pPixel->m_iDiff = 0;
-				pPixel->m_uiBestPX = EXTEG;
-				pPixel->m_uiBestPY = EXTEG;
-				pPixel->m_mmMatch.m_uiAbsDiff = 255;
-				pPixel->m_mmMatch.m_uiNumMatchPoints = 0;
-				pPixel->m_mmMatch.m_uiNumValidPoints = 0;
-			}// end x
-		}// end y
-	}// end ch
+	//			pPixel->m_bIsRec = false;
+	//			pPixel->m_uiX = uiX;
+	//			pPixel->m_uiY = uiY;
+	//			pPixel->m_uiOrg = 0;
+	//			pPixel->m_uiPred = 0;
+	//			pPixel->m_uiReco = 0;
+	//			pPixel->m_iResi = 0;
+	//			pPixel->m_iDiff = 0;
+	//			pPixel->m_uiBestPX = EXTEG;
+	//			pPixel->m_uiBestPY = EXTEG;
+	//			pPixel->m_mmMatch.m_uiAbsDiff = 255;
+	//			pPixel->m_mmMatch.m_uiNumMatchPoints = 0;
+	//			pPixel->m_mmMatch.m_uiNumValidPoints = 0;
+	//		}// end x
+	//	}// end y
+	//}// end ch
 }
 
 Void TDecCu::xReconPGRQT(TComDataCU* pcCU, UInt uiDepth)
@@ -724,10 +724,20 @@ Void TDecCu::xPGRRecBlk(TComYuv* pcRecoYuv, TComYuv* pcPredYuv, TComYuv* pcResiY
 	const Int debugPredModeMask = DebugStringGetPredModeMask(MODE_INTRA);
 	std::string *psDebug = (DebugOptionList::DebugString_InvTran.getInt()&debugPredModeMask) ? &sDebug : 0;
 #endif
+	Pel* pResiIPred = pcCU->getPic()->getPicYuvResi()->getAddr(compID, pcCU->getCtuRsAddr(), pcCU->getZorderIdxInCtu() + uiAbsPartIdx);
+	UInt uiResiIPredStride = pcCU->getPic()->getPicYuvResi()->getStride(compID);
 
 	if (pcCU->getCbf(uiAbsPartIdx, compID, rTu.GetTransformDepthRel()) != 0)
 	{
-		m_pcTrQuant->invTransformNxN(rTu, compID, piResi, uiStride, pcCoeff, cQP DEBUG_STRING_PASS_INTO(psDebug));
+		//m_pcTrQuant->invTransformNxN(rTu, compID, piResi, uiStride, pcCoeff, cQP DEBUG_STRING_PASS_INTO(psDebug));
+		for (UInt y = 0; y < uiHeight; y++)
+		{
+			for (UInt x = 0; x < uiWidth; x++)
+			{
+				pResiIPred[x] = piResi[(y * uiStride) + x] = pcCoeff[y*uiWidth+x];
+			}
+			pResiIPred += uiResiIPredStride;
+		}
 	}
 	else
 	{
@@ -735,23 +745,25 @@ Void TDecCu::xPGRRecBlk(TComYuv* pcRecoYuv, TComYuv* pcPredYuv, TComYuv* pcResiY
 		{
 			for (UInt x = 0; x < uiWidth; x++)
 			{
-				piResi[(y * uiStride) + x] = 0;
+				pResiIPred[x] = piResi[(y * uiStride) + x] = 0;
 			}
+			pResiIPred += uiResiIPredStride;
 		}
 	}
-	if (compID == COMPONENT_Y)
-	{
-		fstream fresi;
-		fresi.open("dec_resi_y.txt", ios::app);
-		for (UInt y = 0; y < uiHeight; y++)
-		{
-			for (UInt x = 0; x < uiWidth; x++)
-			{
-				fresi << piResi[(y * uiStride) + x] << endl;;
-			}
-		}
-		fresi.close();
-	}
+
+	//if (compID == COMPONENT_Y)
+	//{
+	//	fstream fresi;
+	//	fresi.open("dec_resi_y.txt", ios::app);
+	//	for (UInt y = 0; y < uiHeight; y++)
+	//	{
+	//		for (UInt x = 0; x < uiWidth; x++)
+	//		{
+	//			fresi << piResi[(y * uiStride) + x] << endl;;
+	//		}
+	//	}
+	//	fresi.close();
+	//}
 	
 
 
@@ -762,53 +774,53 @@ Void TDecCu::xPGRRecBlk(TComYuv* pcRecoYuv, TComYuv* pcPredYuv, TComYuv* pcResiY
 	}
 #endif
 	//===== reconstruction =====
-	const UInt uiRecIPredStride = pcCU->getPic()->getPicYuvRec()->getStride(compID);
-
-	//Pel* pPred = piPred;
-	Pel* pPred = pcCU->getPic()->getPicYuvPred()->getAddr(compID, pcCU->getCtuRsAddr(), pcCU->getZorderIdxInCtu() + uiAbsPartIdx);
-	Pel* pResi = piResi;
-	Pel* pReco = pcRecoYuv->getAddr(compID, uiAbsPartIdx);
-	Pel* pRecIPred = pcCU->getPic()->getPicYuvRec()->getAddr(compID, pcCU->getCtuRsAddr(), pcCU->getZorderIdxInCtu() + uiAbsPartIdx);
-
-	//Pel* pAbnormalResi = g_pcYuvAbnormalResi->getAddr(compID, pcCU->getCtuRsAddr(), pcCU->getZorderIdxInCtu() + uiAbsPartIdx);
-
-//	Pel* pCResi = g_pcYuvResi->getAddr(compID, pcCU->getCtuRsAddr(), pcCU->getZorderIdxInCtu() + uiAbsPartIdx);
-
-	const Int clipbd = sps.getBitDepth(toChannelType(compID));
-#if O0043_BEST_EFFORT_DECODING
-	const Int bitDepthDelta = sps.getStreamBitDepth(toChannelType(compID)) - clipbd;
-#endif
-
-	for (UInt uiY = 0; uiY < uiHeight; uiY++)
-	{
-		for (UInt uiX = 0; uiX < uiWidth; uiX++)
-		{
-
-#if O0043_BEST_EFFORT_DECODING
-			pReco[uiX] = ClipBD(rightShiftEvenRounding<Pel>(pPred[uiX] + pResi[uiX], bitDepthDelta), clipbd);
-#else
-#if PGR_ENABLE
-//			assert(pAbnormalResi[uiX] == -1 || pAbnormalResi[uiX] < 4 && pAbnormalResi[uiX] >= 0);
-//			if (pAbnormalResi[uiX] == -1)
-				pReco[uiX] = ClipBD(pPred[uiX] + pResi[uiX], clipbd);
-	//		else
-	//   			pReco[uiX] = ClipBD(g_ppPalette[compID].m_pEntry[pAbnormalResi[uiX]] + pResi[uiX], clipbd);
-#else
-			pReco[uiX] = ClipBD(pPred[uiX] + pResi[uiX], clipbd);
-#endif
-#endif
-			pRecIPred[uiX] = pReco[uiX];
-
-			//pCResi[uiX] = pResi[uiX];
-		}
-		pPred += uiRecIPredStride;
-		pResi += uiStride;
-		pReco += uiStride;
-		pRecIPred += uiRecIPredStride;
-		//pAbnormalResi += uiRecIPredStride;
-
-		//pCResi += uiRecIPredStride;
-	}
+//	const UInt uiRecIPredStride = pcCU->getPic()->getPicYuvRec()->getStride(compID);
+//
+//	//Pel* pPred = piPred;
+//	Pel* pPred = pcCU->getPic()->getPicYuvPred()->getAddr(compID, pcCU->getCtuRsAddr(), pcCU->getZorderIdxInCtu() + uiAbsPartIdx);
+//	Pel* pResi = piResi;
+//	Pel* pReco = pcRecoYuv->getAddr(compID, uiAbsPartIdx);
+//	Pel* pRecIPred = pcCU->getPic()->getPicYuvRec()->getAddr(compID, pcCU->getCtuRsAddr(), pcCU->getZorderIdxInCtu() + uiAbsPartIdx);
+//
+//	//Pel* pAbnormalResi = g_pcYuvAbnormalResi->getAddr(compID, pcCU->getCtuRsAddr(), pcCU->getZorderIdxInCtu() + uiAbsPartIdx);
+//
+////	Pel* pCResi = g_pcYuvResi->getAddr(compID, pcCU->getCtuRsAddr(), pcCU->getZorderIdxInCtu() + uiAbsPartIdx);
+//
+//	const Int clipbd = sps.getBitDepth(toChannelType(compID));
+//#if O0043_BEST_EFFORT_DECODING
+//	const Int bitDepthDelta = sps.getStreamBitDepth(toChannelType(compID)) - clipbd;
+//#endif
+//
+//	for (UInt uiY = 0; uiY < uiHeight; uiY++)
+//	{
+//		for (UInt uiX = 0; uiX < uiWidth; uiX++)
+//		{
+//
+//#if O0043_BEST_EFFORT_DECODING
+//			pReco[uiX] = ClipBD(rightShiftEvenRounding<Pel>(pPred[uiX] + pResi[uiX], bitDepthDelta), clipbd);
+//#else
+//#if PGR_ENABLE
+////			assert(pAbnormalResi[uiX] == -1 || pAbnormalResi[uiX] < 4 && pAbnormalResi[uiX] >= 0);
+////			if (pAbnormalResi[uiX] == -1)
+//				pReco[uiX] = ClipBD(pPred[uiX] + pResi[uiX], clipbd);
+//	//		else
+//	//   			pReco[uiX] = ClipBD(g_ppPalette[compID].m_pEntry[pAbnormalResi[uiX]] + pResi[uiX], clipbd);
+//#else
+//			pReco[uiX] = ClipBD(pPred[uiX] + pResi[uiX], clipbd);
+//#endif
+//#endif
+//			pRecIPred[uiX] = pReco[uiX];
+//
+//			//pCResi[uiX] = pResi[uiX];
+//		}
+//		pPred += uiRecIPredStride;
+//		pResi += uiStride;
+//		pReco += uiStride;
+//		pRecIPred += uiRecIPredStride;
+//		//pAbnormalResi += uiRecIPredStride;
+//
+//		//pCResi += uiRecIPredStride;
+//	}
 }
 
 #endif // PGR_ENABLE
